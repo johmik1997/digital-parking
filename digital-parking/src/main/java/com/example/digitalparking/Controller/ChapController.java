@@ -4,8 +4,12 @@ import com.example.digitalparking.Dto.Request.ChapaDirectChargeRequest;
 import com.example.digitalparking.Dto.Request.ChapaPaymentRequest;
 import com.example.digitalparking.Dto.Request.ChapaTransferRequest;
 import com.example.digitalparking.Entity.Order;
+import com.example.digitalparking.Entity.Service.ServiceOrder;
 import com.example.digitalparking.Entity.Transaction;
-import com.example.digitalparking.Service.OrderService;
+import com.example.digitalparking.Enum.OrderStatus;
+import com.example.digitalparking.Repository.Service.ServiceOrRepository;
+import com.example.digitalparking.Repository.Service.ServiceOrderRepository;
+import com.example.digitalparking.Service.ServiceOrderService;
 import com.example.digitalparking.Service.TransactionService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,10 +26,11 @@ import org.springframework.web.client.RestTemplate;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.LocalDateTime;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/chapa")
@@ -34,8 +39,7 @@ public class ChapController {
 
     private static final Logger logger = LoggerFactory.getLogger(ChapController.class);
 
-    // Your Chapa Configuration
-    @Value("${chapa.secret.key:CHASECK-KavPE1HMF0tOEnPnMJudcANRq8x4aGIR}")
+    @Value("${chapa.secret.key}")
     private String chapaSecretKey;
 
     @Value("${chapa.transaction.url:https://api.chapa.co/v1/transaction/initialize}")
@@ -43,15 +47,6 @@ public class ChapController {
 
     @Value("${chapa.verification.url:https://api.chapa.co/v1/transaction/verify}")
     private String verificationUrl;
-
-    @Value("${chapa.transfer.url:https://api.chapa.co/v1/transfers}")
-    private String transferUrl;
-
-    @Value("${chapa.direct.charge.url:https://api.chapa.co/v1/charges}")
-    private String directChargeUrl;
-
-    @Value("${chapa.transaction.verification.url:https://api.chapa.co/v1/transfers/verify}")
-    private String transactionVerificationUrl;
 
     @Value("${chapa.webhook.secret:MedTestGoCbhi}")
     private String webhookSecret;
@@ -63,464 +58,164 @@ public class ChapController {
     private TransactionService transactionService;
 
     @Autowired
-    private OrderService orderService;
+    private ServiceOrRepository orderService;
 
     @Autowired
     private ObjectMapper objectMapper;
 
+    /**
+     * Initialize Payment with Chapa
+     */
     @PostMapping("/initialize")
     public ResponseEntity<?> initializePayment(@RequestBody ChapaPaymentRequest request) {
-        logger.info("Initializing Chapa payment for tx_ref: {}", request.getTxRef());
-
         try {
-            // ==========================
-            // Validate Required Fields
-            // ==========================
-            if (request.getAmount() == null ||
-                    request.getEmail() == null ||
-                    request.getTxRef() == null) {
-
-                return ResponseEntity.badRequest().body(Map.of(
-                        "status", "error",
-                        "message", "Missing required payment fields: amount, email, or tx_ref"
-                ));
+            if (request.getAmount() == null || request.getEmail() == null || request.getTxRef() == null) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Missing required fields"));
             }
 
-            // ==========================
-            // Prepare Headers
-            // ==========================
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.setBearerAuth(chapaSecretKey); // DO NOT prefix manually with "Bearer"
+            headers.setBearerAuth(chapaSecretKey);
 
-            // ==========================
-            // Build Chapa Request
-            // ==========================
             Map<String, Object> chapaRequest = new HashMap<>();
-            chapaRequest.put("amount", String.format("%.2f", request.getAmount())); // string with 2 decimals
+            chapaRequest.put("amount", request.getAmount());
             chapaRequest.put("currency", request.getCurrency() != null ? request.getCurrency() : "ETB");
             chapaRequest.put("email", request.getEmail());
             chapaRequest.put("first_name", request.getFirstName());
             chapaRequest.put("last_name", request.getLastName());
-            chapaRequest.put("phone_number", request.getPhoneNumber());
             chapaRequest.put("tx_ref", request.getTxRef());
             chapaRequest.put("callback_url", request.getCallbackUrl());
             chapaRequest.put("return_url", request.getReturnUrl());
-            chapaRequest.put("payment_options", "card,telebirr,birr,bank"); // required in some accounts
 
-            // Customization
-            if (request.getCustomization() != null) {
-                Map<String, String> customization = new HashMap<>();
-                customization.put("title", request.getCustomization().getTitle());
-                customization.put("description", request.getCustomization().getDescription());
-                customization.put("logo", request.getCustomization().getLogo());
-                chapaRequest.put("customization", customization);
-            }
-
-            // Meta
             if (request.getMeta() != null) {
-                Map<String, String> meta = new HashMap<>();
-                meta.put("order_id", request.getMeta().getOrderId());
-                meta.put("order_uuid", request.getMeta().getOrderUuid());
-                meta.put("service_type", request.getMeta().getServiceType());
-                meta.put("user_uuid", request.getMeta().getUserUuid());
-                chapaRequest.put("meta", meta);
+                chapaRequest.put("meta", Map.of(
+                        "order_uuid", request.getMeta().getOrderUuid(),
+                        "user_uuid", request.getMeta().getUserUuid()
+                ));
             }
-
-            // ==========================
-            // Log Request Payload
-            // ==========================
-            logger.info("Chapa request payload: {}", objectMapper.writeValueAsString(chapaRequest));
 
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(chapaRequest, headers);
+            ResponseEntity<JsonNode> response = restTemplate.postForEntity(transactionUrl, entity, JsonNode.class);
 
-            // ==========================
-            // Call Chapa API
-            // ==========================
-            ResponseEntity<String> chapaResponse = restTemplate.exchange(
-                    transactionUrl,
-                    HttpMethod.POST,
-                    entity,
-                    String.class
-            );
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                // Save Transaction as Pending
+                Transaction transaction = new Transaction();
+                transaction.setTxRef(request.getTxRef());
+                transaction.setAmount(request.getAmount());
+                transaction.setStatus("pending");
+                transaction.setOrderUuid(request.getMeta() != null ? request.getMeta().getOrderUuid() : null);
+                transaction.setCreatedAt(LocalDateTime.now());
+                transactionService.saveTransaction(transaction);
 
-            logger.info("Raw Chapa response: {}", chapaResponse.getBody());
-
-            if (chapaResponse.getBody() == null) {
-                return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(Map.of(
-                        "status", "error",
-                        "message", "Empty response from Chapa"
-                ));
+                return ResponseEntity.ok(response.getBody());
             }
 
-            JsonNode body = objectMapper.readTree(chapaResponse.getBody());
-            String status = body.path("status").asText();
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(Map.of("message", "Chapa initialization failed"));
 
-            if (!"success".equalsIgnoreCase(status)) {
-                String message = body.path("message").asText("Payment initialization failed");
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
-                        "status", "error",
-                        "message", message,
-                        "raw_response", chapaResponse.getBody() // include raw response for debugging
-                ));
-            }
-
-            String checkoutUrl = body.path("data").path("checkout_url").asText(null);
-
-            if (checkoutUrl == null) {
-                return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(Map.of(
-                        "status", "error",
-                        "message", "Checkout URL missing from Chapa response",
-                        "raw_response", chapaResponse.getBody()
-                ));
-            }
-
-            // ==========================
-            // Save Transaction
-            // ==========================
-            Transaction transaction = new Transaction();
-            transaction.setTxRef(request.getTxRef());
-            transaction.setAmount(request.getAmount());
-            transaction.setCurrency(request.getCurrency() != null ? request.getCurrency() : "ETB");
-            transaction.setStatus("pending");
-            transaction.setCustomerEmail(request.getEmail());
-            transaction.setCustomerName(request.getFirstName() + " " + request.getLastName());
-            transaction.setCustomerPhone(request.getPhoneNumber());
-            transaction.setOrderUuid(request.getMeta() != null ? request.getMeta().getOrderUuid() : null);
-            transaction.setServiceType(request.getMeta() != null ? request.getMeta().getServiceType() : null);
-            transaction.setCreatedAt(LocalDateTime.now());
-            transactionService.saveTransaction(transaction);
-
-            // ==========================
-            // Return Clean Response
-            // ==========================
-            return ResponseEntity.ok(Map.of(
-                    "status", "success",
-                    "message", "Payment initialized successfully",
-                    "data", Map.of(
-                            "checkout_url", checkoutUrl,
-                            "tx_ref", request.getTxRef()
-                    )
-            ));
-
-        } catch (HttpClientErrorException | HttpServerErrorException e) {
-            logger.error("Chapa API error, status: {}, body: {}", e.getStatusCode(), e.getResponseBodyAsString());
-            return ResponseEntity.status(e.getStatusCode()).body(Map.of(
-                    "status", "error",
-                    "message", e.getResponseBodyAsString()
-            ));
         } catch (Exception e) {
-            logger.error("Chapa payment initialization error", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
-                    "status", "error",
-                    "message", "Internal server error while initializing payment"
-            ));
-        }
-    }
-
-
-    /**
-     * Verify payment with Chapa
-     * URL: https://api.chapa.co/v1/transaction/verify/{tx_ref}
-     */
-    @GetMapping("/verify/{tx_ref}")
-    public ResponseEntity<?> verifyPayment(@PathVariable("tx_ref") String txRef) {
-        logger.info("Verifying Chapa payment for tx_ref: {}", txRef);
-
-        try {
-            String url = verificationUrl + "/" + txRef;
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setBearerAuth(chapaSecretKey);
-
-            HttpEntity<?> entity = new HttpEntity<>(headers);
-
-            ResponseEntity<JsonNode> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    entity,
-                    JsonNode.class
-            );
-
-            // Update transaction status in database
-            if (response.getBody() != null) {
-                String status = response.getBody().path("data").path("status").asText();
-
-                Transaction transaction = transactionService.findByTxRef(txRef);
-                if (transaction != null) {
-                    transaction.setStatus(status);
-                    transaction.setVerifiedAt(LocalDateTime.now());
-                    transactionService.updateTransaction(transaction);
-
-                    // If payment successful, update order status
-                    if ("success".equals(status) && transaction.getOrderUuid() != null) {
-                        Order order = orderService.findByOrderUuid(transaction.getOrderUuid());
-                        if (order != null) {
-                            order.setStatus("paid");
-                            order.setPaymentTxRef(txRef);
-                            order.setPaidAt(LocalDateTime.now());
-                            orderService.updateOrder(order);
-
-                            logger.info("Order {} marked as paid", order.getOrderUuid());
-                        }
-                    }
-                }
-            }
-
-            return ResponseEntity.ok(response.getBody());
-
-        } catch (HttpClientErrorException | HttpServerErrorException e) {
-            logger.error("Chapa verification API error: {}", e.getMessage());
-            try {
-                JsonNode errorBody = objectMapper.readTree(e.getResponseBodyAsString());
-                return ResponseEntity.status(e.getStatusCode())
-                        .body(Map.of(
-                                "status", "error",
-                                "message", errorBody.path("message").asText("Payment verification failed")
-                        ));
-            } catch (Exception ex) {
-                return ResponseEntity.status(e.getStatusCode())
-                        .body(Map.of(
-                                "status", "error",
-                                "message", "Payment verification failed"
-                        ));
-            }
-        } catch (Exception e) {
-            logger.error("Chapa payment verification error: ", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of(
-                            "status", "error",
-                            "message", "Payment verification failed"
-                    ));
+            logger.error("Chapa init error: ", e);
+            return ResponseEntity.status(500).body(Map.of("message", e.getMessage()));
         }
     }
 
     /**
-     * Webhook handler for Chapa
-     * Uses webhook secret: MedTestGoCbhi
+     * Webhook handler with CORRECT Hex Signature Verification
      */
     @PostMapping("/webhook")
     public ResponseEntity<?> chapaWebhook(
             @RequestBody JsonNode payload,
             @RequestHeader(value = "x-chapa-signature", required = false) String signature) {
 
-        logger.info("Received Chapa webhook");
+        if (!verifyWebhookSignature(payload, signature)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
         try {
-            // Verify webhook signature using your webhook secret
-            if (!verifyWebhookSignature(payload, signature)) {
-                logger.warn("Invalid webhook signature");
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of("status", "error", "message", "Invalid signature"));
-            }
-
-            // Extract data from payload
             String txRef = payload.path("tx_ref").asText();
             String status = payload.path("status").asText();
-            double amount = payload.path("amount").asDouble();
-            String currency = payload.path("currency").asText();
-            String email = payload.path("email").asText();
-            String firstName = payload.path("first_name").asText();
-            String lastName = payload.path("last_name").asText();
-            String phoneNumber = payload.path("phone_number").asText();
 
-            logger.info("Webhook received - TxRef: {}, Status: {}", txRef, status);
+            logger.info("Webhook received for {}: Status {}", txRef, status);
 
-            // Update transaction status
             Transaction transaction = transactionService.findByTxRef(txRef);
             if (transaction != null) {
-                transaction.setStatus(status);
+                transaction.setStatus(status.toLowerCase());
                 transaction.setWebhookReceivedAt(LocalDateTime.now());
-                transaction.setWebhookPayload(payload.toString());
                 transactionService.updateTransaction(transaction);
 
-                // If payment successful, update order status
-                if ("success".equals(status) && transaction.getOrderUuid() != null) {
-                    Order order = orderService.findByOrderUuid(transaction.getOrderUuid());
-                    if (order != null) {
-                        order.setStatus("paid");
-                        order.setPaymentTxRef(txRef);
-                        order.setPaidAt(LocalDateTime.now());
-                        orderService.updateOrder(order);
-
-                        logger.info("Order {} marked as paid via webhook", order.getOrderUuid());
-                    }
+                if ("success".equalsIgnoreCase(status) && transaction.getOrderUuid() != null) {
+                    finalizeOrder(transaction.getOrderUuid(), txRef);
                 }
-            } else {
-                // Create new transaction if not found (webhook arrived before our callback)
-                Transaction newTransaction = new Transaction();
-                newTransaction.setTxRef(txRef);
-                newTransaction.setAmount(amount);
-                newTransaction.setCurrency(currency);
-                newTransaction.setStatus(status);
-                newTransaction.setCustomerEmail(email);
-                newTransaction.setCustomerName(firstName + " " + lastName);
-                newTransaction.setCustomerPhone(phoneNumber);
-                newTransaction.setWebhookReceivedAt(LocalDateTime.now());
-                newTransaction.setWebhookPayload(payload.toString());
-                newTransaction.setCreatedAt(LocalDateTime.now());
-
-                transactionService.saveTransaction(newTransaction);
-                logger.info("Created new transaction from webhook: {}", txRef);
             }
-
-            return ResponseEntity.ok(Map.of("status", "success"));
-
+            return ResponseEntity.ok().build();
         } catch (Exception e) {
-            logger.error("Chapa webhook processing error: ", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("status", "error", "message", "Webhook processing failed"));
+            logger.error("Webhook processing failed", e);
+            return ResponseEntity.internalServerError().build();
         }
     }
 
     /**
-     * Initialize transfer with Chapa
-     * URL: https://api.chapa.co/v1/transfers
+     * Manual Verification Endpoint
      */
-    @PostMapping("/transfer/initialize")
-    public ResponseEntity<?> initializeTransfer(@RequestBody ChapaTransferRequest request) {
-        logger.info("Initializing Chapa transfer for account: {}", request.getAccountNumber());
-
+    @GetMapping("/verify/{tx_ref}")
+    public ResponseEntity<?> verifyPayment(@PathVariable("tx_ref") String txRef) {
         try {
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
             headers.setBearerAuth(chapaSecretKey);
-
-            Map<String, Object> transferRequest = new HashMap<>();
-            transferRequest.put("amount", request.getAmount());
-            transferRequest.put("currency", request.getCurrency() != null ? request.getCurrency() : "ETB");
-            transferRequest.put("account_name", request.getAccountName());
-            transferRequest.put("account_number", request.getAccountNumber());
-            transferRequest.put("bank_code", request.getBankCode());
-            transferRequest.put("reference", request.getReference());
-            transferRequest.put("narration", request.getNarration());
-
-            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(transferRequest, headers);
-
-            ResponseEntity<JsonNode> response = restTemplate.exchange(
-                    transferUrl,
-                    HttpMethod.POST,
-                    entity,
-                    JsonNode.class
-            );
-
-            return ResponseEntity.ok(response.getBody());
-
-        } catch (Exception e) {
-            logger.error("Chapa transfer initialization error: ", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of(
-                            "status", "error",
-                            "message", "Transfer initialization failed"
-                    ));
-        }
-    }
-
-    /**
-     * Verify transfer with Chapa
-     * URL: https://api.chapa.co/v1/transfers/verify
-     */
-    @GetMapping("/transfer/verify/{reference}")
-    public ResponseEntity<?> verifyTransfer(@PathVariable("reference") String reference) {
-        logger.info("Verifying Chapa transfer for reference: {}", reference);
-
-        try {
-            String url = transactionVerificationUrl + "/" + reference;
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setBearerAuth(chapaSecretKey);
-
             HttpEntity<?> entity = new HttpEntity<>(headers);
 
             ResponseEntity<JsonNode> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    entity,
-                    JsonNode.class
-            );
+                    verificationUrl + "/" + txRef, HttpMethod.GET, entity, JsonNode.class);
 
+            if (response.getBody() != null && "success".equalsIgnoreCase(response.getBody().path("status").asText())) {
+                String remoteStatus = response.getBody().path("data").path("status").asText();
+
+                Transaction transaction = transactionService.findByTxRef(txRef);
+                if (transaction != null) {
+                    transaction.setStatus(remoteStatus.toLowerCase());
+                    transaction.setVerifiedAt(LocalDateTime.now());
+                    transactionService.updateTransaction(transaction);
+
+                    if ("success".equalsIgnoreCase(remoteStatus)) {
+                        finalizeOrder(transaction.getOrderUuid(), txRef);
+                    }
+                }
+            }
             return ResponseEntity.ok(response.getBody());
-
         } catch (Exception e) {
-            logger.error("Chapa transfer verification error: ", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of(
-                            "status", "error",
-                            "message", "Transfer verification failed"
-                    ));
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    private void finalizeOrder(String orderUuid, String txRef) {
+        Optional<ServiceOrder> order = orderService.findByOrderUuid(orderUuid);
+        if (order != null && !"paid".equalsIgnoreCase(String.valueOf(order.get().getStatus()))) {
+            order.get().setStatus(OrderStatus.COMPLETED);
+            logger.info("Order {} marked as PAID", orderUuid);
         }
     }
 
     /**
-     * Direct charge with Chapa
-     * URL: https://api.chapa.co/v1/charges
-     */
-    @PostMapping("/direct-charge")
-    public ResponseEntity<?> directCharge(@RequestBody ChapaDirectChargeRequest request) {
-        logger.info("Processing direct charge for tx_ref: {}", request.getTxRef());
-
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.setBearerAuth(chapaSecretKey);
-
-            Map<String, Object> chargeRequest = new HashMap<>();
-            chargeRequest.put("amount", request.getAmount());
-            chargeRequest.put("currency", request.getCurrency() != null ? request.getCurrency() : "ETB");
-            chargeRequest.put("email", request.getEmail());
-            chargeRequest.put("phone_number", request.getPhoneNumber());
-            chargeRequest.put("tx_ref", request.getTxRef());
-            chargeRequest.put("payment_method", request.getPaymentMethod());
-            chargeRequest.put("bank_code", request.getBankCode());
-
-            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(chargeRequest, headers);
-
-            ResponseEntity<JsonNode> response = restTemplate.exchange(
-                    directChargeUrl,
-                    HttpMethod.POST,
-                    entity,
-                    JsonNode.class
-            );
-
-            return ResponseEntity.ok(response.getBody());
-
-        } catch (Exception e) {
-            logger.error("Chapa direct charge error: ", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of(
-                            "status", "error",
-                            "message", "Direct charge failed"
-                    ));
-        }
-    }
-
-    /**
-     * Verify webhook signature using your webhook secret: MedTestGoCbhi
+     * FIXED: Hex Signature Verification
      */
     private boolean verifyWebhookSignature(JsonNode payload, String signature) {
-        if (signature == null || signature.isEmpty()) {
-            return false;
-        }
-
+        if (signature == null) return false;
         try {
-            String payloadString = payload.toString();
-
             Mac sha256Hmac = Mac.getInstance("HmacSHA256");
-            SecretKeySpec secretKey = new SecretKeySpec(
-                    webhookSecret.getBytes(StandardCharsets.UTF_8),
-                    "HmacSHA256"
-            );
+            SecretKeySpec secretKey = new SecretKeySpec(webhookSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
             sha256Hmac.init(secretKey);
 
-            byte[] hashBytes = sha256Hmac.doFinal(payloadString.getBytes(StandardCharsets.UTF_8));
-            String computedHash = Base64.getEncoder().encodeToString(hashBytes);
+            byte[] hashBytes = sha256Hmac.doFinal(payload.toString().getBytes(StandardCharsets.UTF_8));
 
-            boolean isValid = computedHash.equals(signature);
-            logger.info("Webhook signature verification: {}", isValid ? "VALID" : "INVALID");
+            // Convert to HEX string (Chapa requirement)
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hashBytes) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) hexString.append('0');
+                hexString.append(hex);
+            }
 
-            return isValid;
+            return MessageDigest.isEqual(hexString.toString().getBytes(), signature.getBytes());
         } catch (Exception e) {
-            logger.error("Signature verification failed: ", e);
             return false;
         }
     }
