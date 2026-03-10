@@ -1,17 +1,14 @@
 package com.example.digitalparking.ServiceImpl.ServiceImpl;
 
 import com.example.digitalparking.Dto.Request.Service.CreateServiceRequest;
-import com.example.digitalparking.Dto.Request.Service.UpdateRateRequest;
+import com.example.digitalparking.Dto.Request.Service.UpdateServiceRequest;
 import com.example.digitalparking.Dto.Response.ServiceResponse;
 import com.example.digitalparking.Entity.Service.ServiceEntity;
-import com.example.digitalparking.Entity.Service.ServiceRate;
-import com.example.digitalparking.Repository.Service.ServiceRateRepository;
 import com.example.digitalparking.Repository.Service.ServiceRepository;
 import com.example.digitalparking.Service.ServicePro;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,7 +18,6 @@ import java.util.stream.Collectors;
 public class ServiceImpl implements ServicePro {
 
     private final ServiceRepository serviceRepository;
-    private final ServiceRateRepository rateRepository;
 
     @Override
     public ServiceResponse createService(CreateServiceRequest request) {
@@ -30,45 +26,46 @@ public class ServiceImpl implements ServicePro {
                 .name(request.getName())
                 .description(request.getDescription())
                 .pricingType(request.getPricingType())
+                .slot(request.getSlot())
+                .currentRate(request.getRate())
                 .active(true)
                 .build();
 
         serviceRepository.save(service);
-
-        System.out.println("seeeeeee" + service.getServiceUUid());
-
-        return mapToResponse(service, null);
+        return mapToResponse(service);
     }
 
     @Override
-    public ServiceResponse updateRate(String serviceId, UpdateRateRequest request) {
+    public ServiceResponse updateService(String serviceId, UpdateServiceRequest request) {
 
         ServiceEntity service = serviceRepository.findByServiceUUid(serviceId)
                 .orElseThrow(() -> new RuntimeException("Service not found"));
 
-        ServiceRate rate = ServiceRate.builder()
-                .service(service)
-                .rate(request.getRate())
-                .effectiveFrom(LocalDate.now())
-                .build();
+        if (request.getName() != null) {
+            service.setName(request.getName());
+        }
+        if (request.getDescription() != null) {
+            service.setDescription(request.getDescription());
+        }
+        if (request.getPricingType() != null) {
+            service.setPricingType(request.getPricingType());
+        }
+        if (request.getSlot() != null) {
+            service.setSlot(request.getSlot());
+        }
+        if (request.getRate() != null) {
+            service.setCurrentRate(request.getRate());
+        }
 
-        rateRepository.save(rate);
-
-        return mapToResponse(service, rate.getRate());
+        serviceRepository.save(service);
+        return mapToResponse(service);
     }
 
     @Override
     public List<ServiceResponse> getAllServices() {
         return serviceRepository.findAll()
                 .stream()
-                .map(service -> {
-                    var latestRate = rateRepository
-                            .findTopByServiceIdOrderByEffectiveFromDesc(service.getId())
-                            .map(ServiceRate::getRate)
-                            .orElse(null);
-
-                    return mapToResponse(service, latestRate);
-                })
+                .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
@@ -81,14 +78,15 @@ public class ServiceImpl implements ServicePro {
         serviceRepository.save(service);
     }
 
-    private ServiceResponse mapToResponse(ServiceEntity service, java.math.BigDecimal rate) {
+    private ServiceResponse mapToResponse(ServiceEntity service) {
         return ServiceResponse.builder()
                 .serviceUuid(service.getServiceUUid())
                 .name(service.getName())
                 .description(service.getDescription())
                 .pricingType(service.getPricingType())
+                .slot(service.getSlot())
                 .active(service.getActive())
-                .currentRate(rate)
+                .currentRate(service.getCurrentRate())
                 .build();
     }
 }

@@ -1,0 +1,27 @@
+-- Database patch for appointment/order flow (PostgreSQL)
+-- Add missing columns for service_orders and services.
+
+ALTER TABLE service_orders
+  ADD COLUMN IF NOT EXISTS rate_applied NUMERIC;
+
+ALTER TABLE service_orders
+  ADD COLUMN IF NOT EXISTS service_type VARCHAR(64),
+  ADD COLUMN IF NOT EXISTS appointment_date VARCHAR(32),
+  ADD COLUMN IF NOT EXISTS appointment_time VARCHAR(32),
+  ADD COLUMN IF NOT EXISTS vehicle_plate VARCHAR(64),
+  ADD COLUMN IF NOT EXISTS vehicle_type VARCHAR(64),
+  ADD COLUMN IF NOT EXISTS wash_package VARCHAR(64),
+  ADD COLUMN IF NOT EXISTS parking_date VARCHAR(32),
+  ADD COLUMN IF NOT EXISTS selected_slot VARCHAR(32),
+  ADD COLUMN IF NOT EXISTS entry_time VARCHAR(32),
+  ADD COLUMN IF NOT EXISTS duration VARCHAR(32),
+  ADD COLUMN IF NOT EXISTS visit_date VARCHAR(32),
+  ADD COLUMN IF NOT EXISTS ticket_type VARCHAR(32),
+  ADD COLUMN IF NOT EXISTS quantity INTEGER,
+  ADD COLUMN IF NOT EXISTS addons TEXT,
+  ADD COLUMN IF NOT EXISTS notes TEXT,
+  ADD COLUMN IF NOT EXISTS order_date VARCHAR(32);
+
+ALTER TABLE services
+  ADD COLUMN IF NOT EXISTS current_rate NUMERIC,
+  ADD COLUMN IF NOT EXISTS slot INTEGER;

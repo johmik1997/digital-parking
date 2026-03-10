@@ -4,7 +4,6 @@ import com.example.digitalparking.Dto.Request.Service.ServiceOrderReq;
 import com.example.digitalparking.Dto.Response.ServiceOrderResp;
 import com.example.digitalparking.Entity.Service.ServiceEntity;
 import com.example.digitalparking.Entity.Service.ServiceOrder;
-import com.example.digitalparking.Entity.Service.ServiceRate;
 import com.example.digitalparking.Enum.OrderStatus;
 import com.example.digitalparking.Repository.Service.ServiceOrRepository;
 import com.example.digitalparking.Repository.Service.ServiceRepository;
@@ -16,7 +15,6 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -34,16 +32,16 @@ public class ServiceOrderServiceImpl implements ServiceOrderService {
                 .orElseThrow(() -> new RuntimeException("Service not found"));
 
         // Get the most recent rate
-        ServiceRate currentRate = service.getRates().stream()
-                .sorted(Comparator.comparing(ServiceRate::getEffectiveFrom).reversed())
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("No active rate found"));
+        BigDecimal currentRate = service.getCurrentRate();
+        if (currentRate == null) {
+            throw new RuntimeException("No active rate found");
+        }
 
         BigDecimal total;
         if ("HOURLY".equals(service.getPricingType())) {
-            total = currentRate.getRate().multiply(BigDecimal.valueOf(request.durationHours()));
+            total = currentRate.multiply(BigDecimal.valueOf(request.durationHours()));
         } else {
-            total = currentRate.getRate();
+            total = currentRate;
         }
 
         ServiceOrder order = ServiceOrder.builder()

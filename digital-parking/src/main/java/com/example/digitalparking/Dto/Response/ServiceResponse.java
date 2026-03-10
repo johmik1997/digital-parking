@@ -13,6 +13,7 @@ public class ServiceResponse {
     private String name;
     private String description;
     private String pricingType;
+    private Integer slot;
     private Boolean active;
     private BigDecimal currentRate;
 }

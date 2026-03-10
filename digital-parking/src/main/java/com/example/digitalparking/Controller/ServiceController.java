@@ -2,7 +2,7 @@ package com.example.digitalparking.Controller;
 
 
 import com.example.digitalparking.Dto.Request.Service.CreateServiceRequest;
-import com.example.digitalparking.Dto.Request.Service.UpdateRateRequest;
+import com.example.digitalparking.Dto.Request.Service.UpdateServiceRequest;
 import com.example.digitalparking.Dto.Response.ServiceResponse;
 import com.example.digitalparking.Service.ServicePro;
 
@@ -23,11 +23,11 @@ public class ServiceController {
         return serviceService.createService(request);
     }
 
-    @PostMapping("/{ServiceUuid}/rate")
-    public ServiceResponse updateRate(
+    @PutMapping("/{ServiceUuid}")
+    public ServiceResponse updateService(
             @PathVariable String ServiceUuid,
-            @RequestBody UpdateRateRequest request) {
-        return serviceService.updateRate(ServiceUuid, request);
+            @RequestBody UpdateServiceRequest request) {
+        return serviceService.updateService(ServiceUuid, request);
     }
 
     @GetMapping

@@ -2,6 +2,7 @@ package com.example.digitalparking.Controller;
 
 import com.example.digitalparking.Dto.Request.Service.ServiceOrderRequest;
 import com.example.digitalparking.Dto.Response.ClientServiceResponse;
+import com.example.digitalparking.Dto.Response.ParkingAvailabilityResponse;
 import com.example.digitalparking.Dto.Response.ServiceOrderResponse;
 import com.example.digitalparking.Entity.Service.ServiceEntity;
 import com.example.digitalparking.Entity.Service.ServiceOrder;
@@ -34,13 +35,21 @@ public class ClientServiceController {
         return ResponseEntity.ok(clientServiceService.getServiceWithCurrentRate(id));
     }
 
+    @GetMapping("/{serviceUuid}/availability")
+    public ResponseEntity<List<ParkingAvailabilityResponse>> getParkingAvailability(
+            @PathVariable String serviceUuid,
+            @RequestParam String parkingDate) {
+        return ResponseEntity.ok(clientServiceService.getParkingAvailability(serviceUuid, parkingDate));
+    }
+
     @PostMapping("/orders/{userUuid}")
-    public ResponseEntity<ServiceOrder> createOrder(
+    public ResponseEntity<ServiceOrderResponse> createOrder(
             @PathVariable String userUuid,
             @Valid @RequestBody ServiceOrderRequest request) {
 
         ServiceOrder order = clientServiceService.createOrder(request, userUuid);
-        return new ResponseEntity<>(order, HttpStatus.CREATED);
+        ServiceOrderResponse response = clientServiceService.getOrderDetailsResponse(order.getOrderUuid(), userUuid);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @GetMapping("/orders/history/{userUuid}")

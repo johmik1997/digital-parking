@@ -32,9 +32,53 @@ public class ServiceOrder {
     @JoinColumn(name = "client_id", nullable = false)
     private UserEntity client;
 
-    @ManyToOne
-    @JoinColumn(name = "rate_id", nullable = false)
-    private ServiceRate rateApplied; // The rate at time of order
+    @Column(name = "rate_applied", nullable = false)
+    private BigDecimal rateApplied; // The rate at time of order
+
+    @Column(name = "service_type")
+    private String serviceType;
+
+    // Car wash fields
+    @Column(name = "appointment_date")
+    private String appointmentDate;
+
+    @Column(name = "appointment_time")
+    private String appointmentTime;
+
+    @Column(name = "vehicle_plate")
+    private String vehiclePlate;
+
+    @Column(name = "vehicle_type")
+    private String vehicleType;
+
+    @Column(name = "wash_package")
+    private String washPackage;
+
+    // Parking fields
+    @Column(name = "parking_date")
+    private String parkingDate;
+
+    @Column(name = "selected_slot")
+    private String selectedSlot;
+
+    @Column(name = "entry_time")
+    private String entryTime;
+
+    @Column(name = "duration")
+    private String duration;
+
+    // Amusement fields
+    @Column(name = "visit_date")
+    private String visitDate;
+
+    @Column(name = "ticket_type")
+    private String ticketType;
+
+    @Column(name = "quantity")
+    private Integer quantity;
+
+    @Column(name = "addons")
+    private String addons; // Comma-separated values
 
     @Column(name = "duration_hours")
     private Double durationHours; // For HOURLY services
@@ -57,6 +101,9 @@ public class ServiceOrder {
 
     @Column(name = "notes")
     private String notes;
+
+    @Column(name = "order_date")
+    private String orderDate;
 
     @PrePersist
     protected void onCreate() {
