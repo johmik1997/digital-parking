@@ -82,4 +82,23 @@ public class ClientServiceController {
 
         return ResponseEntity.ok(clientServiceService.completeOrder(orderUuid));
     }
+
+    // Cashier endpoint to accept parking appointment on arrival
+    @PostMapping("/orders/arrive")
+    public ResponseEntity<ServiceOrderResponse> acceptArrival(@RequestParam String plate) {
+        return ResponseEntity.ok(clientServiceService.acceptParkingArrival(plate));
+    }
+
+    // Cashier endpoint to find a pending parking appointment by plate
+    @GetMapping("/orders/appointment")
+    public ResponseEntity<ServiceOrderResponse> findAppointment(@RequestParam String plate) {
+        return ResponseEntity.ok(clientServiceService.findParkingAppointment(plate));
+    }
+
+    // Cashier endpoint to list active (processing) orders by service type
+    @RequestMapping(value = "/orders/active", method = {RequestMethod.GET, RequestMethod.POST})
+    public ResponseEntity<List<ServiceOrderResponse>> getActiveOrders(
+            @RequestParam(required = false) String serviceType) {
+        return ResponseEntity.ok(clientServiceService.getActiveOrders(serviceType));
+    }
 }

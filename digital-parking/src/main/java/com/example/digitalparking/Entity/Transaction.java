@@ -1,59 +1,50 @@
 package com.example.digitalparking.Entity;
 
-
 import jakarta.persistence.*;
-import lombok.Data;
-import org.hibernate.annotations.GenericGenerator;
-
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "transactions")
-@Data
+@Getter
+@Setter
 public class Transaction {
     @Id
-    @GeneratedValue(generator = "UUID")
-    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
-    @Column(name = "id", updatable = false, nullable = false)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false, updatable = false)
+    private Long id;
 
-    @Column(name = "tx_ref", unique = true)
+    @Column(unique = true, nullable = false)
+    private String transactionUuid;
+
+    @Column(unique = true)
+    @Size(min = 5, max = 100)
     private String txRef;
 
-    @Column(name = "amount")
     private Double amount;
-
-    @Column(name = "currency")
     private String currency;
-
-    @Column(name = "status")
-    private String status;
-
-    @Column(name = "customer_email")
+    private String status; // pending, success, failed
     private String customerEmail;
-
-    @Column(name = "customer_name")
     private String customerName;
-
-    @Column(name = "customer_phone")
     private String customerPhone;
-
-    @Column(name = "order_uuid")
     private String orderUuid;
-
-    @Column(name = "service_type")
     private String serviceType;
 
-    @Column(name = "created_at")
     private LocalDateTime createdAt;
-
-    @Column(name = "verified_at")
     private LocalDateTime verifiedAt;
-
-    @Column(name = "webhook_received_at")
     private LocalDateTime webhookReceivedAt;
 
-    @Column(name = "webhook_payload", columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT")
     private String webhookPayload;
+
+    @PrePersist
+    protected void onCreate() {
+        if (this.transactionUuid == null) {
+            this.transactionUuid = UUID.randomUUID().toString();
+        }
+        this.createdAt = LocalDateTime.now();
+    }
 }

@@ -56,8 +56,9 @@ public class WebSecurityConfig {
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
 
-                                "/auth/users/privilege/**",
-                                "/auth/role")
+                        "/auth/users/privilege/**",
+                        "/auth/role"
+                        )
                         .permitAll()
                         .anyRequest().authenticated());
         http.authenticationProvider(authenticationProvider());
@@ -124,4 +125,3 @@ public class WebSecurityConfig {
         return source;
     }
 }
-

@@ -19,7 +19,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -304,6 +306,74 @@ public class ClientServiceServiceImpl implements ClientServiceService {
         order.setCompletedAt(LocalDateTime.now());
 
         return orderRepository.save(order);
+    }
+
+    @Override
+    @Transactional
+    public ServiceOrderResponse acceptParkingArrival(String vehiclePlate) {
+        if (vehiclePlate == null || vehiclePlate.trim().isEmpty()) {
+            throw new IllegalArgumentException("Vehicle plate is required");
+        }
+
+        ServiceOrder order = findPendingParkingAppointment(vehiclePlate);
+
+        if (order.getServiceType() == null || !"PARKING".equalsIgnoreCase(order.getServiceType())) {
+            throw new IllegalStateException("This appointment is not a parking service");
+        }
+
+        if (order.getParkingDate() != null && !order.getParkingDate().isBlank()) {
+            String today = LocalDate.now().toString();
+            if (!order.getParkingDate().equals(today)) {
+                throw new IllegalStateException("This appointment is not scheduled for today");
+            }
+        }
+
+        order.setEntryTime(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+        order.setStatus(OrderStatus.PROCESSING);
+        ServiceOrder saved = orderRepository.save(order);
+        return mapToResponse(saved);
+    }
+
+    @Override
+    public ServiceOrderResponse findParkingAppointment(String vehiclePlate) {
+        ServiceOrder order = findPendingParkingAppointment(vehiclePlate);
+        return mapToResponse(order);
+    }
+
+    @Override
+    public List<ServiceOrderResponse> getActiveOrders(String serviceType) {
+        String type = serviceType != null ? serviceType.trim().toUpperCase() : null;
+        List<ServiceOrder> orders;
+        if (type == null || type.isBlank()) {
+            orders = orderRepository.findByStatusAndServiceTypeOrderByCreatedAtDesc(OrderStatus.PROCESSING, "PARKING");
+        } else {
+            orders = orderRepository.findByStatusAndServiceTypeOrderByCreatedAtDesc(OrderStatus.PROCESSING, type);
+        }
+        return orders.stream().map(this::mapToResponse).collect(Collectors.toList());
+    }
+
+    private ServiceOrder findPendingParkingAppointment(String vehiclePlate) {
+        if (vehiclePlate == null || vehiclePlate.trim().isEmpty()) {
+            throw new IllegalArgumentException("Vehicle plate is required");
+        }
+
+        String normalizedPlate = vehiclePlate.trim().toUpperCase();
+        ServiceOrder order = orderRepository
+                .findTopByVehiclePlateAndStatusOrderByCreatedAtDesc(normalizedPlate, OrderStatus.PENDING)
+                .orElseThrow(() -> new ResourceNotFoundException("No pending appointment found for this plate"));
+
+        if (order.getServiceType() == null || !"PARKING".equalsIgnoreCase(order.getServiceType())) {
+            throw new IllegalStateException("This appointment is not a parking service");
+        }
+
+        if (order.getParkingDate() != null && !order.getParkingDate().isBlank()) {
+            String today = LocalDate.now().toString();
+            if (!order.getParkingDate().equals(today)) {
+                throw new IllegalStateException("This appointment is not scheduled for today");
+            }
+        }
+
+        return order;
     }
 
     private ServiceOrderResponse mapToResponse(ServiceOrder order) {

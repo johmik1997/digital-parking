@@ -34,6 +34,10 @@ public interface ServiceOrderRepository extends JpaRepository<ServiceOrder, Long
     Optional<ServiceOrder> findByOrderUuidAndClientUuid(@Param("orderUuid") String orderUuid,
                                                         @Param("userUuid") String userUuid);
 
+    Optional<ServiceOrder> findTopByVehiclePlateAndStatusOrderByCreatedAtDesc(String vehiclePlate, OrderStatus status);
+
+    List<ServiceOrder> findByStatusAndServiceTypeOrderByCreatedAtDesc(OrderStatus status, String serviceType);
+
     @Query("SELECT o.entryTime, COUNT(o) FROM ServiceOrder o " +
             "WHERE o.service.id = :serviceId AND o.parkingDate = :parkingDate AND o.status <> :cancelled " +
             "GROUP BY o.entryTime")

@@ -33,4 +33,10 @@ public interface ClientServiceService {
     ServiceOrder cancelOrder(String orderId, String clientId);
 
     ServiceOrder completeOrder(String orderId);
+
+    ServiceOrderResponse acceptParkingArrival(String vehiclePlate);
+
+    ServiceOrderResponse findParkingAppointment(String vehiclePlate);
+
+    List<ServiceOrderResponse> getActiveOrders(String serviceType);
 }
