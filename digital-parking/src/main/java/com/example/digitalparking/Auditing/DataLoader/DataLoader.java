@@ -37,24 +37,35 @@ public class DataLoader implements CommandLineRunner {
                         return privilegeRepo.save(p);
                     });
 
-            Privilege manageRoles = privilegeRepo.findByPrivilegeName("MANAGE_ROLE")
-                    .orElseGet(() -> {
-                        Privilege p = new Privilege();
-                        p.setPrivilegeName("MANAGE_ROLE");
-                        p.setPrivilegeDescription("Can manage roles and privileges");
-                        p.setPrivilegeCategory("ROLE_MANAGEMENT");
-                        return privilegeRepo.save(p);
-                    });
+       
 
 // build the set outside
-            Set<Privilege> superAdminPrivileges = Set.of(createUser, manageRoles);
+            Set<Privilege> superAdminPrivileges = Set.of(createUser);
 
-            Role superAdmin = roleRepo.findByRoleName("SUPER_ADMIN")
+            Role superAdmin = roleRepo.findByRoleName("Super Admin")
                     .orElseGet(() -> {
                         Role r = new Role();
-                        r.setRoleName("SUPER_ADMIN");
+                        r.setRoleName("Super Admin");
                         r.setRoleDescription("Super administrator with full access");
                         r.setPrivileges(superAdminPrivileges);
+                        return roleRepo.save(r);
+                    });
+             Role cashier = roleRepo.findByRoleName("Cashier")
+                    .orElseGet(() -> {
+                        Role r = new Role();
+                        r.setRoleName("Cashier");
+                        r.setRoleDescription("Cashier with limited access");
+                        r.setPrivileges(Set.of());
+
+                        return roleRepo.save(r);
+                    });
+             Role customer = roleRepo.findByRoleName("Customer")
+                    .orElseGet(() -> {
+                        Role r = new Role();
+                        r.setRoleName("Customer");
+                        r.setRoleDescription("Regular customer");
+                        r.setPrivileges(Set.of());
+
                         return roleRepo.save(r);
                     });
 
@@ -64,8 +75,8 @@ public class DataLoader implements CommandLineRunner {
 
             // === Super Admin User ===
             UserEntity u = new UserEntity();
-            u.setEmail("superadmin@edis.com");
-            u.setPassword(passwordEncoder.encode("admin@123"));
+            u.setEmail("superadmin@gmail.com");
+            u.setPassword(passwordEncoder.encode("password"));
             u.setTitle("Mr");
             u.setFirstName("Super");
             u.setFatherName("Admin");
@@ -74,5 +85,33 @@ public class DataLoader implements CommandLineRunner {
             u.setGender(Gender.Male);
             u.setUserStatus(Status.ACTIVE);
             u.setRole(superAdmin);
+            userRepo.save(u);
+
+         // === Cashier  User ===
+             UserEntity u = new UserEntity();
+            u.setEmail("cashier@gmail.com");
+            u.setPassword(passwordEncoder.encode("password"));
+            u.setTitle("Mr");
+            u.setFirstName("Cashier");
+            u.setFatherName("Admin");
+            u.setGrandFatherName("System");
+            u.setMobilePhone("0911345678");
+            u.setGender(Gender.Male);
+            u.setUserStatus(Status.ACTIVE);
+            u.setRole(cashier);
+            userRepo.save(u);
+
+              // === Customer  User ===
+             UserEntity u = new UserEntity();
+            u.setEmail("customer@gmail.com");
+            u.setPassword(passwordEncoder.encode("password"));
+            u.setTitle("Mr");
+            u.setFirstName("Customer");
+            u.setFatherName("Admin");
+            u.setGrandFatherName("System");
+            u.setMobilePhone("0911245678");
+            u.setGender(Gender.Male);
+            u.setUserStatus(Status.ACTIVE);
+            u.setRole(customer);
             userRepo.save(u);
         }}}

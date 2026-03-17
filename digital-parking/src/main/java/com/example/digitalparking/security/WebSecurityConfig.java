@@ -53,6 +53,7 @@ public class WebSecurityConfig {
                                 "auth/users/signUp",
                                 "auth/users/signIn",
                                 "/auth/users/privilege/createPrivilege",
+                                "/demo/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
 

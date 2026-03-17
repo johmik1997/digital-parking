@@ -41,6 +41,9 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
     // Pending users only
     Page<UserEntity> findAllByIsDeletedFalseAndUserStatus(Status status, Pageable pageable);
 
+    long countByIsDeletedFalse();
+    long countByUserStatus(Status status);
+
     @Query("SELECT u FROM UserEntity u " +
             "WHERE u.isDeleted = false AND u.userStatus = :status " +
             "AND (u.firstName LIKE %:search% OR u.fatherName LIKE %:search% OR u.mobilePhone LIKE %:search%)")
