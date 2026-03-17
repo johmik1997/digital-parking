@@ -1,0 +1,1 @@
+import{b as r,c,f as o,Y as e,N as s}from"./index-BQZCROio.js";const t={class:"min-h-screen bg-gray-50"},m={__name:"carSpecificationIndex",setup(n){return e("pageTitle","Car Specifications"),e("breadcrumbs",[{name:"Dashboard",href:"/"},{name:"Car Specifications",href:"/car_specifications"}]),(i,p)=>{const a=s("router-view");return r(),c("div",t,[o(a)])}}};export{m as default};
