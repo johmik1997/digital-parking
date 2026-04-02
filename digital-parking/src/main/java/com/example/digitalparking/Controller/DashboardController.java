@@ -129,6 +129,8 @@ public class DashboardController {
                 .map(this::mapRecentOrder)
                 .toList();
 
+        ParkingReservation latestParkingReservation = resolveLatestParkingReservation(userUuid);
+
         long totalPayments = completedOrders + failedOrders + cancelledOrders;
         double paymentSuccessRate = totalPayments == 0 ? 0 : (completedOrders * 100.0) / totalPayments;
         PaymentSuccess paymentSuccess = new PaymentSuccess(completedOrders, failedOrders, cancelledOrders, totalPayments, round(paymentSuccessRate));
@@ -147,7 +149,8 @@ public class DashboardController {
                 serviceTypeCounts,
                 revenueByServiceType,
                 paymentSuccess,
-                recentOrders
+                recentOrders,
+                latestParkingReservation
         );
 
         return ResponseEntity.ok(summary);
@@ -275,8 +278,66 @@ public class DashboardController {
                 order.getVehiclePlate(),
                 order.getTotalAmount(),
                 order.getStatus().name(),
+                order.getCreatedAt() != null ? order.getCreatedAt().toString() : null,
+                order.getParkingDate(),
+                resolveScheduledEntryTime(order),
+                order.getDuration(),
+                order.getEntranceName(),
+                order.getParkingLevelType(),
+                order.getParkingLevelCode(),
+                order.getParkingZone(),
+                order.getSelectedSlot()
+        );
+    }
+
+    private ParkingReservation resolveLatestParkingReservation(String userUuid) {
+        ServiceOrder activeParkingOrder = orderRepository
+                .findTopByClient_UserUuidAndServiceTypeAndStatusInOrderByCreatedAtDesc(
+                        userUuid,
+                        "PARKING",
+                        List.of(OrderStatus.PENDING, OrderStatus.PROCESSING)
+                )
+                .orElse(null);
+
+        if (activeParkingOrder != null) {
+            return mapParkingReservation(activeParkingOrder);
+        }
+
+        return orderRepository
+                .findTopByClient_UserUuidAndServiceTypeOrderByCreatedAtDesc(userUuid, "PARKING")
+                .map(this::mapParkingReservation)
+                .orElse(null);
+    }
+
+    private ParkingReservation mapParkingReservation(ServiceOrder order) {
+        String serviceName = order.getService() != null ? order.getService().getName() : "Parking";
+        return new ParkingReservation(
+                order.getOrderUuid(),
+                serviceName,
+                order.getStatus().name(),
+                order.getParkingDate(),
+                resolveScheduledEntryTime(order),
+                order.getDuration(),
+                order.getEntranceName(),
+                order.getParkingLevelType(),
+                order.getParkingLevelCode(),
+                order.getParkingZone(),
+                order.getSelectedSlot(),
+                order.getVehiclePlate(),
+                order.getTotalAmount(),
                 order.getCreatedAt() != null ? order.getCreatedAt().toString() : null
         );
+    }
+
+    private String resolveScheduledEntryTime(ServiceOrder order) {
+        if (order == null) {
+            return null;
+        }
+        String scheduledEntryTime = order.getScheduledEntryTime();
+        if (scheduledEntryTime != null && !scheduledEntryTime.isBlank()) {
+            return scheduledEntryTime;
+        }
+        return order.getEntryTime();
     }
 
     private AlertItem mapAlert(ServiceOrder order) {
@@ -355,6 +416,31 @@ public class DashboardController {
             String vehiclePlate,
             BigDecimal totalAmount,
             String status,
+            String createdAt,
+            String parkingDate,
+            String scheduledEntryTime,
+            String duration,
+            String entranceName,
+            String parkingLevelType,
+            String parkingLevelCode,
+            String parkingZone,
+            String selectedSlot
+    ) {}
+
+    public record ParkingReservation(
+            String orderUuid,
+            String serviceName,
+            String status,
+            String parkingDate,
+            String scheduledEntryTime,
+            String duration,
+            String entranceName,
+            String parkingLevelType,
+            String parkingLevelCode,
+            String parkingZone,
+            String selectedSlot,
+            String vehiclePlate,
+            BigDecimal totalAmount,
             String createdAt
     ) {}
 
@@ -364,7 +450,8 @@ public class DashboardController {
             List<ServiceTypeCount> serviceTypeCounts,
             List<ServiceTypeRevenue> revenueByServiceType,
             PaymentSuccess paymentSuccess,
-            List<RecentOrder> recentOrders
+            List<RecentOrder> recentOrders,
+            ParkingReservation latestParkingReservation
     ) {}
 
     public record CustomerOverview(

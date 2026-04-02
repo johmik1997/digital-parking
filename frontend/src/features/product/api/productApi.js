@@ -21,5 +21,5 @@ export function getServices(query = {}) {
 }
 
 export const toggleService = (id) => {
-  return api.post(`${path}/${id}/toggle`);
+  return api.put(`${path}/${id}/toggle`);
 }

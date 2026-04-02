@@ -29,7 +29,7 @@
           </div>
           <div class="flex justify-between text-xs text-slate-600 mt-2">
             <span>Amount</span>
-            <span class="text-slate-900 font-medium">ETB {{ formatAmount(order.amount) }}</span>
+            <span class="text-slate-900 font-medium">ETB {{ formatAmount(order.amount || order.totalAmount) }}</span>
           </div>
         </div>
       </div>
@@ -66,6 +66,7 @@ const status = ref('loading')
 const statusMessage = ref('Verifying your payment with Chapa...')
 const txRef = computed(() => route.query.tx_ref)
 const order = ref(null)
+const pendingPayment = ref(null)
 
 const statusClass = computed(() => {
   if (status.value === 'success') return 'bg-emerald-500'
@@ -83,14 +84,31 @@ const loadPendingOrder = () => {
     const raw = sessionStorage.getItem('pending_payment')
     if (!raw) return
     const parsed = JSON.parse(raw)
+    pendingPayment.value = parsed
     if (parsed?.order) {
-      order.value = {
-        serviceName: parsed.order?.serviceName,
-        amount: parsed.order?.amount
-      }
+      order.value = parsed.order
     }
   } catch (error) {
     console.warn('Failed to read pending payment', error)
+  }
+}
+
+const buildOrdersRedirect = (paymentState = null) => {
+  const query = {}
+  const orderUuid = pendingPayment.value?.order?.orderUuid
+
+  if (orderUuid) {
+    query.focusOrder = orderUuid
+  }
+
+  if (paymentState) {
+    query.payment = paymentState
+    query.tab = 'history'
+  }
+
+  return {
+    path: '/service/order',
+    query,
   }
 }
 
@@ -115,7 +133,7 @@ const handleVerification = async () => {
       statusMessage.value = 'Payment verified successfully. Redirecting you to your orders...'
       sessionStorage.removeItem('pending_payment')
       setTimeout(() => {
-        router.push('/service/order')
+        router.push(buildOrdersRedirect('success'))
       }, 1800)
     } else {
       status.value = 'error'
@@ -135,7 +153,7 @@ const retryVerify = () => {
 }
 
 const goToOrders = () => {
-  router.push('/service/order')
+  router.push(buildOrdersRedirect(status.value === 'success' ? 'success' : null))
 }
 
 onMounted(() => {

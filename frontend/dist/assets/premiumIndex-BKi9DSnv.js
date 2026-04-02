@@ -1,1 +1,0 @@
-import{b as o,c as r,f as t,N as n}from"./index-BQZCROio.js";const s={class:"min-h-screen bg-gray-50"},p={__name:"premiumIndex",setup(c){return(a,_)=>{const e=n("router-view");return o(),r("div",s,[t(e)])}}};export{p as default};

@@ -73,6 +73,17 @@ public interface ServiceOrRepository extends JpaRepository<ServiceOrder, Long> {
 
     List<ServiceOrder> findTop5ByClient_UserUuidOrderByCreatedAtDesc(String userUuid);
 
+    Optional<ServiceOrder> findTopByClient_UserUuidAndServiceTypeAndStatusInOrderByCreatedAtDesc(
+            String userUuid,
+            String serviceType,
+            List<OrderStatus> statuses
+    );
+
+    Optional<ServiceOrder> findTopByClient_UserUuidAndServiceTypeOrderByCreatedAtDesc(
+            String userUuid,
+            String serviceType
+    );
+
     @Query("select coalesce(sum(o.totalAmount), 0) from ServiceOrder o where o.client.userUuid = :userUuid and o.status = :status")
     BigDecimal sumTotalAmountByStatusForClient(
             @Param("userUuid") String userUuid,

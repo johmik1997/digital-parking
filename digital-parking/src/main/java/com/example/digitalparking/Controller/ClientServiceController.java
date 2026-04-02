@@ -38,8 +38,9 @@ public class ClientServiceController {
     @GetMapping("/{serviceUuid}/availability")
     public ResponseEntity<List<ParkingAvailabilityResponse>> getParkingAvailability(
             @PathVariable String serviceUuid,
-            @RequestParam String parkingDate) {
-        return ResponseEntity.ok(clientServiceService.getParkingAvailability(serviceUuid, parkingDate));
+            @RequestParam String parkingDate,
+            @RequestParam(required = false) String duration) {
+        return ResponseEntity.ok(clientServiceService.getParkingAvailability(serviceUuid, parkingDate, duration));
     }
 
     @PostMapping("/orders/{userUuid}")
@@ -100,5 +101,24 @@ public class ClientServiceController {
     public ResponseEntity<List<ServiceOrderResponse>> getActiveOrders(
             @RequestParam(required = false) String serviceType) {
         return ResponseEntity.ok(clientServiceService.getActiveOrders(serviceType));
+    }
+
+    @GetMapping("/orders/cashier/reservations")
+    public ResponseEntity<List<ServiceOrderResponse>> getCashierReservations(
+            @RequestParam(required = false) String parkingDate) {
+        return ResponseEntity.ok(clientServiceService.getCashierReservations(parkingDate));
+    }
+
+    @GetMapping("/orders/completed")
+    public ResponseEntity<List<ServiceOrderResponse>> getCompletedOrders(
+            @RequestParam(required = false) String serviceType) {
+        return ResponseEntity.ok(clientServiceService.getCompletedOrders(serviceType));
+    }
+
+    @PostMapping("/orders/{orderUuid}/checkout")
+    public ResponseEntity<ServiceOrderResponse> checkoutParkingOrder(
+            @PathVariable String orderUuid,
+            @RequestParam(required = false) String paymentMethod) {
+        return ResponseEntity.ok(clientServiceService.checkoutParkingOrder(orderUuid, paymentMethod));
     }
 }

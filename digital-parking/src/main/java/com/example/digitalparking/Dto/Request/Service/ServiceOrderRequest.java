@@ -49,6 +49,18 @@ public class ServiceOrderRequest {
     @JsonProperty("parkingDate")
     private String parkingDate;
 
+    @JsonProperty("entranceName")
+    private String entranceName;
+
+    @JsonProperty("parkingLevelType")
+    private String parkingLevelType;
+
+    @JsonProperty("parkingLevelCode")
+    private String parkingLevelCode;
+
+    @JsonProperty("parkingZone")
+    private String parkingZone;
+
     @JsonProperty("selectedSlot")
     private String selectedSlot;
 

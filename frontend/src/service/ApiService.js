@@ -2,7 +2,7 @@ import axios from "axios";
 import { responseHandler } from "./ApiResponseHandler";
 import { useAuth } from "@/stores/auth";
 
-const backendApiUrl = import.meta.env.v_API_URL;
+const backendApiUrl = import.meta.env.v_API_URL|| 'http://localhost:8280/api/medco-digital-parking/v1';
 
 export default class ApiService {
   api;

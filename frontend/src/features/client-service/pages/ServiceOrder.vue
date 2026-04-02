@@ -193,6 +193,12 @@
       @payment-error="handlePaymentError"
     />
 
+    <ServiceOrderDetailModal
+      :show="showOrderDetailModal"
+      :order="selectedOrderDetail"
+      @close="closeOrderDetailModal"
+    />
+
     <!-- Floating Action Button for Quick Booking (Mobile Only) -->
     <transition
       enter-active-class="transition duration-300 ease-out"
@@ -216,20 +222,29 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { clientServiceApi } from '../api/clientServiceApi'
 import ServiceCard from '../components/ServiceCard.vue'
 import ServiceOrderModal from '../components/ServiceOrderModal.vue'
 import ServiceHistory from '../components/ServiceHistory.vue'
 import PaymentModal from '../components/PaymentModal.vue'
+import ServiceOrderDetailModal from '../components/ServiceOrderDetailModal.vue'
 import { useAuth } from '@/stores/auth'
 import { useToast } from '@/features/client-service/components/ui/toast'
+import {
+  buildParkingGoogleMapsUrl,
+  buildParkingInstructions,
+  buildParkingLocationDisplay,
+} from '../utils/parkingLayout'
 
 // Icons
 import { SparklesIcon, TicketIcon } from '@heroicons/vue/24/outline'
 
 // ---------------- AUTH ----------------
 const auth = useAuth()
+const route = useRoute()
+const router = useRouter()
 const { showToast } = useToast()
 const userUuid = computed(() => auth.auth.user?.userUuid || null)
 
@@ -245,12 +260,24 @@ const selectedService = ref(null)
 
 const showPaymentModal = ref(false)
 const pendingPaymentOrder = ref(null)
+const showOrderDetailModal = ref(false)
+const selectedOrderDetail = ref(null)
 
 // ---------------- TABS ----------------
 const tabs = [
   { value: 'services', label: 'Services', icon: SparklesIcon },
   { value: 'history', label: 'My Orders', icon: TicketIcon }
 ]
+
+const inferServiceType = (service) => {
+  if (service?.type) return service.type
+
+  const name = service?.name?.toLowerCase() || ''
+  if (name.includes('car wash')) return 'CAR_WASH'
+  if (name.includes('parking')) return 'PARKING'
+  if (name.includes('meskel') || name.includes('amusement')) return 'AMUSEMENT'
+  return ''
+}
 
 // ---------------- COMPUTED ----------------
 const filteredServices = computed(() => {
@@ -358,13 +385,25 @@ const createServiceOrder = async (orderData) => {
       id: response.data?.id || response.data?.orderUuid,
       orderUuid: response.data?.orderUuid || response.data?.id,
       serviceName: selectedService.value?.name,
-      serviceType: response.data?.serviceType || selectedService.value?.type,
+      serviceType: response.data?.serviceType || inferServiceType(selectedService.value),
       amount: resolvedTotal,
       rateApplied: response.data?.rateApplied || selectedService.value?.currentRate,
       bookingDetails: {
         date: orderData.appointmentDate || orderData.parkingDate || orderData.visitDate,
-        time: orderData.appointmentTime || orderData.entryTime
+        time: orderData.appointmentTime || orderData.entryTime,
+        location:
+          response.data?.parkingLocationDisplay ||
+          buildParkingLocationDisplay(orderData)
       },
+      parkingLocationDisplay:
+        response.data?.parkingLocationDisplay ||
+        buildParkingLocationDisplay(orderData),
+      googleMapsUrl:
+        response.data?.googleMapsUrl ||
+        buildParkingGoogleMapsUrl({ entranceName: orderData.entranceName }),
+      navigationInstructions:
+        response.data?.navigationInstructions ||
+        buildParkingInstructions(orderData),
       userUuid: userUuid.value
     }
 
@@ -398,22 +437,27 @@ const closePaymentModal = () => {
   }, 300)
 }
 
-const handlePaymentSuccess = (paymentData) => {
+const openOrderDetailModal = (orderDetail) => {
+  selectedOrderDetail.value = orderDetail
+  showOrderDetailModal.value = true
+}
+
+const closeOrderDetailModal = () => {
+  showOrderDetailModal.value = false
+  setTimeout(() => {
+    selectedOrderDetail.value = null
+  }, 300)
+}
+
+const handlePaymentSuccess = () => {
   closePaymentModal()
   
   showToast({
-    title: 'Payment Successful! 💰',
-    description: 'Your booking is now confirmed',
+    title: 'Payment Session Ready',
+    description: 'Complete payment to unlock the ride page and final order details.',
     type: 'success',
     duration: 5000
   })
-
-  fetchServiceHistory()
-  
-  // Switch to history tab to show updated order
-  setTimeout(() => {
-    activeTab.value = 'history'
-  }, 1500)
 }
 
 const handlePaymentError = (error) => {
@@ -424,19 +468,25 @@ const handlePaymentError = (error) => {
   })
 }
 
+const fetchOrderDetails = async (orderUuid) => {
+  if (!userUuid.value || !orderUuid) return null
+  const response = await clientServiceApi.getOrderDetails(orderUuid, userUuid.value)
+  return response.data || null
+}
+
 const viewOrderDetails = async (order) => {
   try {
-    if (!userUuid.value) return
-    const response = await clientServiceApi.getOrderDetails(order.orderUuid, userUuid.value)
-    
-    showToast({
-      title: `Order #${order.orderUuid?.slice(-6) || order.id?.slice(-6)}`,
-      description: `Status: ${order.status} | Total: ETB ${order.amount || order.totalAmount}`,
-      type: 'info',
-      duration: 5000
-    })
+    const orderDetails = await fetchOrderDetails(order.orderUuid)
+    if (orderDetails) {
+      openOrderDetailModal(orderDetails)
+    }
   } catch (error) {
     console.error('Failed to fetch order details:', error)
+    showToast({
+      title: 'Unable to load order details',
+      description: error.response?.data?.message || 'Please try again.',
+      type: 'error'
+    })
   }
 }
 
@@ -481,32 +531,41 @@ const scrollToTop = () => {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
+const handleRouteState = async () => {
+  const focusOrder = typeof route.query.focusOrder === 'string' ? route.query.focusOrder : null
+  const paymentState = typeof route.query.payment === 'string' ? route.query.payment : null
+  const targetTab = typeof route.query.tab === 'string' ? route.query.tab : null
+
+  if (targetTab === 'history' || focusOrder || paymentState === 'success') {
+    activeTab.value = 'history'
+  }
+
+  if (paymentState === 'success') {
+    showToast({
+      title: 'Payment Successful!',
+      description: 'Your parking order is completed and the ride page is ready in order details.',
+      type: 'success',
+      duration: 6000
+    })
+  }
+
+  if (focusOrder) {
+    const orderDetails = await fetchOrderDetails(focusOrder)
+    if (orderDetails) {
+      openOrderDetailModal(orderDetails)
+    }
+  }
+
+  if (focusOrder || paymentState || targetTab) {
+    router.replace({ path: route.path, query: {} })
+  }
+}
+
 // ---------------- LIFECYCLE ----------------
 onMounted(async () => {
   await fetchServices()
   await fetchServiceHistory()
-})
-
-// Check for payment callback
-onMounted(() => {
-  const urlParams = new URLSearchParams(window.location.search)
-  const txRef = urlParams.get('tx_ref')
-  const status = urlParams.get('status')
-  
-  if (txRef && status === 'success') {
-    showToast({
-      title: 'Payment Successful!',
-      description: 'Your transaction has been completed',
-      type: 'success',
-      duration: 6000
-    })
-    fetchServiceHistory()
-    activeTab.value = 'history'
-  }
-})
-
-onUnmounted(() => {
-  // Cleanup
+  await handleRouteState()
 })
 </script>
 

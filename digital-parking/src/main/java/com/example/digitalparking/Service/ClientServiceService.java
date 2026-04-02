@@ -28,7 +28,7 @@ public interface ClientServiceService {
 
     ServiceOrderResponse getOrderDetailsResponse(String orderId, String clientId);
 
-    List<ParkingAvailabilityResponse> getParkingAvailability(String serviceUuid, String parkingDate);
+    List<ParkingAvailabilityResponse> getParkingAvailability(String serviceUuid, String parkingDate, String duration);
 
     ServiceOrder cancelOrder(String orderId, String clientId);
 
@@ -39,4 +39,10 @@ public interface ClientServiceService {
     ServiceOrderResponse findParkingAppointment(String vehiclePlate);
 
     List<ServiceOrderResponse> getActiveOrders(String serviceType);
+
+    List<ServiceOrderResponse> getCashierReservations(String parkingDate);
+
+    List<ServiceOrderResponse> getCompletedOrders(String serviceType);
+
+    ServiceOrderResponse checkoutParkingOrder(String orderUuid, String paymentMethod);
 }

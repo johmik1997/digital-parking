@@ -88,30 +88,30 @@ public class DataLoader implements CommandLineRunner {
             userRepo.save(u);
 
          // === Cashier  User ===
-             UserEntity u = new UserEntity();
-            u.setEmail("cashier@gmail.com");
-            u.setPassword(passwordEncoder.encode("password"));
-            u.setTitle("Mr");
-            u.setFirstName("Cashier");
-            u.setFatherName("Admin");
-            u.setGrandFatherName("System");
-            u.setMobilePhone("0911345678");
-            u.setGender(Gender.Male);
-            u.setUserStatus(Status.ACTIVE);
-            u.setRole(cashier);
-            userRepo.save(u);
+             UserEntity uh = new UserEntity();
+            uh.setEmail("cashier@gmail.com");
+            uh.setPassword(passwordEncoder.encode("password"));
+            uh.setTitle("Mr");
+            uh.setFirstName("Cashier");
+            uh.setFatherName("Admin");
+            uh.setGrandFatherName("System");
+            uh.setMobilePhone("0911345678");
+            uh.setGender(Gender.Male);
+            uh.setUserStatus(Status.ACTIVE);
+            uh.setRole(cashier);
+            userRepo.save(uh);
 
               // === Customer  User ===
-             UserEntity u = new UserEntity();
-            u.setEmail("customer@gmail.com");
-            u.setPassword(passwordEncoder.encode("password"));
-            u.setTitle("Mr");
-            u.setFirstName("Customer");
-            u.setFatherName("Admin");
-            u.setGrandFatherName("System");
-            u.setMobilePhone("0911245678");
-            u.setGender(Gender.Male);
-            u.setUserStatus(Status.ACTIVE);
-            u.setRole(customer);
-            userRepo.save(u);
+             UserEntity uc = new UserEntity();
+            uc.setEmail("customer@gmail.com");
+            uc.setPassword(passwordEncoder.encode("password"));
+            uc.setTitle("Mr");
+            uc.setFirstName("Customer");
+            uc.setFatherName("Admin");
+            uc.setGrandFatherName("System");
+            uc.setMobilePhone("0911245678");
+            uc.setGender(Gender.Male);
+            uc.setUserStatus(Status.ACTIVE);
+            uc.setRole(customer);
+            userRepo.save(uc);
         }}}

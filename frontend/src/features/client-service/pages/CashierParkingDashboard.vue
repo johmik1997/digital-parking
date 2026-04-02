@@ -1,390 +1,480 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 overflow-x-hidden">
-    <!-- Header -->
-    <header class="bg-white/80 backdrop-blur-sm border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 sticky top-0 z-10">
-      <div class="max-w-7xl mx-auto flex justify-between items-center">
-        <div class="flex items-center space-x-2 sm:space-x-3">
-          <div class="h-8 w-8 sm:h-10 sm:w-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center text-white shadow-md">
-            <svg class="h-4 w-4 sm:h-5 sm:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+  <div class="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.10),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(245,158,11,0.10),_transparent_26%),linear-gradient(180deg,_#f8fafc_0%,_#ffffff_42%,_#f8fafc_100%)]">
+    <header class="sticky top-0 z-20 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
+      <div class="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex items-center gap-3">
+          <div class="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-sky-600 to-cyan-500 text-white shadow-lg shadow-sky-200">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 13l2-5h14l2 5M5 13h14m-13 4h1m10 0h1M6 17h12a1 1 0 001-1v-3H5v3a1 1 0 001 1z" />
             </svg>
           </div>
           <div>
-            <h1 class="text-base sm:text-xl font-bold text-gray-800">Meskel Square Parking</h1>
-            <p class="text-xs text-gray-500">Premium Parking Management System</p>
+            <p class="text-[11px] font-semibold uppercase tracking-[0.25em] text-sky-600">Cashier Console</p>
+            <h1 class="text-xl font-bold text-slate-900">Meskel Square Parking Operations</h1>
+            <p class="text-xs text-slate-500">
+              Handle reserved arrivals, late customers, overtime, and exit checkout from one screen.
+            </p>
           </div>
         </div>
-        <div class="bg-gray-100 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl">
-          <p class="text-[10px] sm:text-xs text-gray-500 font-medium">Device ID</p>
-          <p class="text-xs sm:text-sm font-mono font-bold text-blue-600">{{ displayCashierId }}</p>
+
+        <div class="grid grid-cols-2 gap-3 sm:flex sm:items-center">
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <p class="text-[10px] uppercase tracking-[0.2em] text-slate-400">Cashier</p>
+            <p class="mt-1 text-sm font-semibold text-slate-900">{{ cashierLabel }}</p>
+          </div>
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <p class="text-[10px] uppercase tracking-[0.2em] text-slate-400">Last refresh</p>
+            <p class="mt-1 text-sm font-semibold text-slate-900">{{ lastRefreshLabel }}</p>
+          </div>
         </div>
       </div>
     </header>
 
-    <!-- Main Content -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-        
-        <!-- Left Panel - PMS Sync -->
-        <div class="lg:col-span-1 space-y-4 sm:space-y-6">
-          <!-- Arrival Search -->
-          <div class="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-4 sm:p-5 shadow-lg">
-            <h2 class="text-base sm:text-lg font-bold text-gray-800">Find Appointment</h2>
-            <p class="text-[10px] sm:text-xs text-gray-500 mt-1">Enter vehicle plate to locate today’s appointment.</p>
-            <div class="mt-3 flex gap-2">
+    <main class="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6">
+      <div
+        v-if="errorMessage"
+        class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+      >
+        {{ errorMessage }}
+      </div>
+
+      <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <article class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400">Expected Today</p>
+          <p class="mt-3 text-3xl font-black text-slate-900">{{ reservations.length }}</p>
+          <p class="mt-2 text-xs text-slate-500">Reserved vehicles waiting for arrival or payment confirmation.</p>
+        </article>
+
+        <article class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400">Active Inside</p>
+          <p class="mt-3 text-3xl font-black text-slate-900">{{ activeOrders.length }}</p>
+          <p class="mt-2 text-xs text-slate-500">Cars currently in the parking area and not checked out yet.</p>
+        </article>
+
+        <article class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400">Late Arrivals</p>
+          <p class="mt-3 text-3xl font-black text-amber-600">{{ lateReservations.length }}</p>
+          <p class="mt-2 text-xs text-slate-500">Reservations that arrived after the 15-minute grace window.</p>
+        </article>
+
+        <article class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400">Overtime Due</p>
+          <p class="mt-3 text-3xl font-black text-rose-600">ETB {{ formatMoney(totalOvertimeDue) }}</p>
+          <p class="mt-2 text-xs text-slate-500">Extra amount currently owed by active vehicles after grace time.</p>
+        </article>
+
+        <article class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400">Checked Out</p>
+          <p class="mt-3 text-3xl font-black text-emerald-600">{{ completedOrders.length }}</p>
+          <p class="mt-2 text-xs text-slate-500">Completed parking exits with arrival and checkout timestamps.</p>
+        </article>
+      </section>
+
+      <section class="grid grid-cols-1 gap-6 xl:grid-cols-[1.05fr_1fr_1fr]">
+        <div class="space-y-6">
+          <article class="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <p class="text-[11px] font-semibold uppercase tracking-[0.25em] text-sky-600">Arrival Desk</p>
+                <h2 class="mt-1 text-lg font-bold text-slate-900">Find a reservation by plate</h2>
+                <p class="mt-1 text-xs text-slate-500">
+                  Use this when a customer arrives. The system will show whether the booking is prepaid,
+                  late, or still has money due at exit.
+                </p>
+              </div>
+              <button
+                @click="refreshAll({ silent: false })"
+                :disabled="isLoading"
+                class="inline-flex items-center rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+              >
+                Refresh
+              </button>
+            </div>
+
+            <div class="mt-4 flex gap-2">
               <input
                 v-model="arrivalPlate"
                 type="text"
-                placeholder="Plate number (e.g., 3-98765)"
-                class="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Plate number"
+                class="flex-1 rounded-2xl border border-slate-200 px-4 py-3 text-sm uppercase text-slate-900 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+                @keyup.enter="searchAppointment"
               />
               <button
                 @click="searchAppointment"
-                :disabled="isSearching || !arrivalPlate"
-                class="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-bold rounded-lg disabled:opacity-60"
+                :disabled="isSearching || !arrivalPlate.trim()"
+                class="rounded-2xl bg-gradient-to-r from-sky-600 to-cyan-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-sky-200 transition hover:opacity-95 disabled:opacity-60"
               >
-                {{ isSearching ? 'Searching...' : 'Search' }}
+                {{ isSearching ? "Searching..." : "Search" }}
               </button>
             </div>
-            <p v-if="arrivalError" class="mt-2 text-[10px] text-red-600">{{ arrivalError }}</p>
 
-            <!-- Search Result Card -->
-            <div v-if="arrivalResult" class="mt-4 bg-slate-50 border border-slate-200 rounded-xl p-3">
-              <div class="flex justify-between items-start">
+            <p v-if="arrivalError" class="mt-3 text-xs text-rose-600">{{ arrivalError }}</p>
+
+            <div v-if="arrivalResult" class="mt-5 rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+              <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p class="text-xs text-slate-500">Appointment Found</p>
-                  <p class="text-base font-mono font-bold text-slate-900">{{ arrivalResult.vehiclePlate }}</p>
-                  <p class="text-[10px] text-slate-500 mt-1">
-                    Order: {{ arrivalResult.orderUuid }}
-                  </p>
+                  <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Matched Reservation</p>
+                  <h3 class="mt-2 text-lg font-black text-slate-900">{{ arrivalResult.vehiclePlate }}</h3>
+                  <p class="mt-1 text-xs text-slate-500">{{ shortOrderId(arrivalResult.orderUuid) }} • {{ arrivalResult.clientName || "Customer" }}</p>
                 </div>
-                <span class="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold">PARKING</span>
+                <span
+                  :class="arrivalWindowClass(arrivalResult.arrivalWindowStatus)"
+                  class="rounded-full px-3 py-1 text-[11px] font-bold"
+                >
+                  {{ arrivalWindowLabel(arrivalResult) }}
+                </span>
               </div>
-              <div class="mt-3 flex justify-between items-center">
-                <div class="text-[10px] text-slate-500">
-                  Rate: ETB {{ arrivalResult.rateApplied || 0 }} / hr
+
+              <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                  <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400">Reserved Slot</p>
+                  <p class="mt-2 text-sm font-semibold text-slate-900">{{ parkingLocation(arrivalResult) }}</p>
+                  <p class="mt-1 text-[11px] text-slate-500">{{ entranceName(arrivalResult) }}</p>
                 </div>
+                <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                  <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400">Booked Window</p>
+                  <p class="mt-2 text-sm font-semibold text-slate-900">{{ bookingWindow(arrivalResult) }}</p>
+                  <p class="mt-1 text-[11px] text-slate-500">{{ paymentSummary(arrivalResult) }}</p>
+                </div>
+              </div>
+
+              <div class="mt-4 rounded-2xl border border-dashed border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+                {{ reservationPolicyText(arrivalResult) }}
+              </div>
+
+              <div class="mt-4 flex flex-wrap gap-3">
                 <button
                   @click="acceptArrivalFromResult"
                   :disabled="isAccepting"
-                  class="px-3 py-1.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white text-[10px] font-bold rounded-lg disabled:opacity-60"
+                  class="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:opacity-60"
                 >
-                  {{ isAccepting ? 'Accepting...' : 'Accept Arrival' }}
+                  {{ isAccepting ? "Checking In..." : "Accept Arrival" }}
+                </button>
+                <button
+                  @click="clearSearch"
+                  class="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-white"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          </article>
+
+          <article class="rounded-[28px] border border-slate-200 bg-slate-950 p-5 text-white shadow-sm">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.25em] text-sky-300">Handling Rules</p>
+            <h2 class="mt-2 text-lg font-bold">Cashier Policy for Late Arrivals and Overtime</h2>
+            <div class="mt-4 space-y-3 text-sm text-slate-200">
+              <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                <p class="font-semibold text-white">Arrival grace</p>
+                <p class="mt-1 text-xs text-slate-300">Customers are treated as on time within 15 minutes of the booked entry time.</p>
+              </div>
+              <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                <p class="font-semibold text-white">Late customers</p>
+                <p class="mt-1 text-xs text-slate-300">Cashier can still check them in. The reservation time is used to flag lateness, but the paid parking duration is tracked from actual arrival.</p>
+              </div>
+              <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                <p class="font-semibold text-white">Extra stay</p>
+                <p class="mt-1 text-xs text-slate-300">Overtime starts only after the vehicle has used more than the paid duration plus the 15-minute grace window.</p>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <article
+          ref="liveFloorSection"
+          class="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm"
+        >
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="text-[11px] font-semibold uppercase tracking-[0.25em] text-amber-500">Today Queue</p>
+              <h2 class="mt-1 text-lg font-bold text-slate-900">Reserved arrivals</h2>
+            </div>
+            <span class="rounded-full bg-amber-50 px-3 py-1 text-[11px] font-bold text-amber-700">
+              {{ reservations.length }} pending
+            </span>
+          </div>
+
+          <div v-if="isLoading && !hasLoaded" class="mt-6 text-sm text-slate-500">Loading reservations...</div>
+          <div v-else-if="reservations.length === 0" class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+            No reserved arrivals are waiting right now.
+          </div>
+
+          <div v-else class="mt-5 space-y-3">
+            <button
+              v-for="reservation in reservations"
+              :key="reservation.orderUuid"
+              @click="setArrivalResult(reservation)"
+              class="w-full rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-4 text-left transition hover:border-sky-300 hover:bg-sky-50/50"
+            >
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <p class="text-base font-black text-slate-900">{{ reservation.vehiclePlate }}</p>
+                  <p class="mt-1 text-xs text-slate-500">{{ reservation.clientName || "Customer" }}</p>
+                  <p class="mt-2 text-xs text-slate-500">{{ parkingLocation(reservation) }}</p>
+                </div>
+                <span
+                  :class="arrivalWindowClass(reservation.arrivalWindowStatus)"
+                  class="rounded-full px-3 py-1 text-[11px] font-bold"
+                >
+                  {{ arrivalWindowLabel(reservation) }}
+                </span>
+              </div>
+
+              <div class="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-500">
+                <span class="rounded-full bg-white px-2.5 py-1">{{ formatParkingSchedule(reservation) }}</span>
+                <span class="rounded-full bg-white px-2.5 py-1">{{ paymentSummary(reservation) }}</span>
+              </div>
+            </button>
+          </div>
+        </article>
+
+        <article class="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="text-[11px] font-semibold uppercase tracking-[0.25em] text-rose-500">Live Floor</p>
+              <h2 class="mt-1 text-lg font-bold text-slate-900">Vehicles currently inside</h2>
+            </div>
+            <span class="rounded-full bg-rose-50 px-3 py-1 text-[11px] font-bold text-rose-700">
+              {{ activeOrders.length }} active
+            </span>
+          </div>
+
+          <div v-if="isLoading && !hasLoaded" class="mt-6 text-sm text-slate-500">Loading active vehicles...</div>
+          <div v-else-if="activeOrders.length === 0" class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+            No active vehicles at the moment.
+          </div>
+
+          <div v-else class="mt-5 space-y-3">
+            <div
+              v-for="order in activeOrders"
+              :key="order.orderUuid"
+              :class="[
+                lastAcceptedOrderUuid === order.orderUuid
+                  ? 'border-sky-300 bg-sky-50 ring-4 ring-sky-100'
+                  : 'border-slate-200 bg-slate-50',
+                'rounded-[22px] border px-4 py-4 transition-all duration-500'
+              ]"
+            >
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <p class="text-base font-black text-slate-900">{{ order.vehiclePlate }}</p>
+                  <p class="mt-1 text-xs text-slate-500">{{ parkingLocation(order) }}</p>
+                </div>
+                <span
+                  :class="paymentStatusClass(order)"
+                  class="rounded-full px-3 py-1 text-[11px] font-bold"
+                >
+                  {{ order.paymentStatusLabel || "ACTIVE" }}
+                </span>
+              </div>
+
+              <div class="mt-4 grid grid-cols-2 gap-3">
+                <div class="rounded-2xl border border-white bg-white px-3 py-3">
+                  <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400">Entered</p>
+                  <p class="mt-2 text-sm font-semibold text-slate-900">{{ formatDateTime(order.entryTime) }}</p>
+                </div>
+                <div class="rounded-2xl border border-white bg-white px-3 py-3">
+                  <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400">Planned Exit</p>
+                  <p class="mt-2 text-sm font-semibold text-slate-900">{{ formatDateTime(order.plannedExitTime) }}</p>
+                </div>
+                <div class="rounded-2xl border border-white bg-white px-3 py-3">
+                  <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400">Elapsed</p>
+                  <p class="mt-2 text-sm font-semibold text-slate-900">{{ formatMinutes(order.elapsedMinutes) }}</p>
+                </div>
+                <div class="rounded-2xl border border-white bg-white px-3 py-3">
+                  <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400">Due Now</p>
+                  <p class="mt-2 text-sm font-semibold text-slate-900">ETB {{ formatMoney(order.amountDueNow) }}</p>
+                </div>
+              </div>
+
+              <div
+                v-if="Number(order.overtimeMinutes || 0) > 0 || Number(order.lateMinutes || 0) > 0"
+                class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800"
+              >
+                <span v-if="Number(order.lateMinutes || 0) > 0">Late arrival {{ order.lateMinutes }} min.</span>
+                <span v-if="Number(order.lateMinutes || 0) > 0 && Number(order.overtimeMinutes || 0) > 0"> </span>
+                <span v-if="Number(order.overtimeMinutes || 0) > 0">
+                  Overtime {{ order.overtimeMinutes }} min after grace, extra ETB {{ formatMoney(order.overtimeAmount) }}.
+                </span>
+              </div>
+
+              <div class="mt-4 flex gap-3">
+                <button
+                  @click="openCheckout(order)"
+                  class="flex-1 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
+                >
+                  Check Out Vehicle
                 </button>
               </div>
             </div>
           </div>
-          <!-- Connection Status Card -->
-          <div class="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-4 sm:p-5 shadow-lg relative overflow-hidden">
-            <div class="absolute top-0 right-0">
-              <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[8px] sm:text-[10px] font-bold px-2 sm:px-3 py-1 rounded-bl-lg uppercase tracking-wider shadow-sm">
-                Live PMS Sync
-              </div>
-            </div>
-            
-            <div class="mb-4 sm:mb-6">
-              <h2 class="text-base sm:text-lg font-bold text-gray-800 flex items-center">
-                <span class="flex h-2 w-2 sm:h-3 sm:w-3 rounded-full bg-green-500 mr-2 animate-pulse"></span>
-                Database Status
-              </h2>
-              <p class="text-[10px] sm:text-xs text-gray-500 mt-1 sm:mt-2 flex items-center">
-                <span class="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>
-                Connected to PMS
-              </p>
-            </div>
+        </article>
+      </section>
 
-            <!-- Sync Button -->
-           <button 
-  @click="fetchPendingFromPMS" 
-  :disabled="isFetching" 
-  class="w-full mr-12 p-3 sm:p-4 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl sm:rounded-2xl text-white transition-all hover:shadow-xl active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed group"
->
-  <div v-if="!isFetching" class="bg-white/20 p-1.5 sm:p-2 rounded-full mb-1.5 sm:mb-2 inline-block group-hover:bg-white/30 transition-colors">
-    <svg class="h-4 w-4 sm:h-5 sm:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-    </svg>
-  </div>
-  <svg v-else class="animate-spin h-5 w-5 sm:h-6 sm:w-6 mx-auto mb-1.5 sm:mb-2" fill="none" viewBox="0 0 24 24">
-    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-  </svg>
-  <p class="font-bold text-xs uppercase tracking-wide">
-    {{ isFetching ? 'Syncing...' : 'Sync Pending Vehicles' }}
-  </p>
-  <p class="text-blue-100 text-[10px] mt-0.5 opacity-80">
-    Last sync: {{ lastRefreshTime }}
-  </p>
-</button>
-
-            <!-- Quick Stats -->
-            <div class="mt-4 grid grid-cols-2 gap-2">
-              <div class="bg-gray-50 p-2 sm:p-3 rounded-lg">
-                <p class="text-[10px] sm:text-xs text-gray-500">Active</p>
-                <p class="text-lg sm:text-xl font-bold text-gray-800">{{ activeCars.length }}</p>
-              </div>
-              <div class="bg-gray-50 p-2 sm:p-3 rounded-lg">
-                <p class="text-[10px] sm:text-xs text-gray-500">Today's Revenue</p>
-                <p class="text-lg sm:text-xl font-bold text-green-600">ETB {{ calculateTodayRevenue() }}</p>
-              </div>
-            </div>
+      <section class="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p class="text-[11px] font-semibold uppercase tracking-[0.25em] text-emerald-500">Exit Log</p>
+            <h2 class="mt-1 text-lg font-bold text-slate-900">Recent completed exits</h2>
           </div>
+          <p class="text-xs text-slate-500">
+            Total completed amount ETB {{ formatMoney(completedAmountTotal) }}
+          </p>
         </div>
 
-        <!-- Right Panel - Active Cars / History -->
-        <div class="lg:col-span-2 space-y-4 sm:space-y-6">
-          <!-- Tab Navigation -->
-          <div class="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-1 flex shadow-lg">
-            <button 
-              @click="activeTab = 'active'" 
-              :class="[
-                activeTab === 'active' 
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' 
-                  : 'text-gray-600 hover:text-gray-900',
-                'flex-1 py-2 sm:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold transition-all duration-200'
-              ]"
-            >
-              Active Vehicles ({{ activeCars.length }})
-            </button>
-            <button 
-              @click="activeTab = 'completed'" 
-              :class="[
-                activeTab === 'completed' 
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' 
-                  : 'text-gray-600 hover:text-gray-900',
-                'flex-1 py-2 sm:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold transition-all duration-200'
-              ]"
-            >
-              History ({{ recentScans.length }})
-            </button>
+        <div v-if="completedOrders.length === 0" class="mt-5 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+          Completed exit transactions will appear here after checkout.
+        </div>
+
+        <div v-else class="mt-5 overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead>
+              <tr class="text-left text-slate-500">
+                <th class="py-3 pr-4">Plate</th>
+                <th class="py-3 pr-4">Reservation</th>
+                <th class="py-3 pr-4">Exit</th>
+                <th class="py-3 pr-4">Late / Overtime</th>
+                <th class="py-3">Final Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="order in completedOrders"
+                :key="order.orderUuid"
+                class="border-t border-slate-100"
+              >
+                <td class="py-4 pr-4">
+                  <p class="font-black text-slate-900">{{ order.vehiclePlate }}</p>
+                  <p class="mt-1 text-xs text-slate-500">{{ shortOrderId(order.orderUuid) }}</p>
+                </td>
+                <td class="py-4 pr-4">
+                  <p class="font-semibold text-slate-800">{{ parkingLocation(order) }}</p>
+                  <p class="mt-1 text-xs text-slate-500">{{ formatParkingSchedule(order) }}</p>
+                </td>
+                <td class="py-4 pr-4 text-slate-600">
+                  {{ formatDateTime(order.completedAt) }}
+                </td>
+                <td class="py-4 pr-4 text-slate-600">
+                  <span v-if="Number(order.lateMinutes || 0) > 0">Late {{ order.lateMinutes }} min</span>
+                  <span v-else>On time</span>
+                  <span v-if="Number(order.overtimeMinutes || 0) > 0">
+                    • Overtime {{ order.overtimeMinutes }} min
+                  </span>
+                </td>
+                <td class="py-4 font-semibold text-slate-900">
+                  ETB {{ formatMoney(order.totalAmount) }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <Transition
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
+      <div
+        v-if="checkoutOrder"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 px-4 py-6 backdrop-blur-sm"
+        @click.self="closeCheckout"
+      >
+        <div class="w-full max-w-xl overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-2xl">
+          <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-sky-700 px-6 py-5 text-white">
+            <p class="text-[11px] uppercase tracking-[0.25em] text-sky-200">Vehicle Checkout</p>
+            <h3 class="mt-2 text-2xl font-black">{{ checkoutOrder.vehiclePlate }}</h3>
+            <p class="mt-1 text-sm text-sky-100">{{ parkingLocation(checkoutOrder) }}</p>
           </div>
 
-          <!-- Active Cars Tab -->
-          <div v-show="activeTab === 'active'" class="space-y-3 sm:space-y-4">
-            <div v-if="activeCars.length === 0" class="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-6 sm:p-8 text-center">
-              <div class="inline-block p-3 bg-gray-100 rounded-full mb-3">
-                <svg class="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+          <div class="space-y-5 px-6 py-6">
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400">Scheduled Window</p>
+                <p class="mt-2 text-sm font-semibold text-slate-900">{{ bookingWindow(checkoutOrder) }}</p>
               </div>
-              <p class="text-gray-500 text-sm sm:text-base">No active vehicles</p>
-              <p class="text-xs text-gray-400 mt-1">Vehicles will appear here when they enter</p>
+              <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400">Actual Entry</p>
+                <p class="mt-2 text-sm font-semibold text-slate-900">{{ formatDateTime(checkoutOrder.entryTime) }}</p>
+              </div>
+              <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400">Booked Amount</p>
+                <p class="mt-2 text-sm font-semibold text-slate-900">ETB {{ formatMoney(checkoutOrder.bookedAmount) }}</p>
+              </div>
+              <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400">Prepaid</p>
+                <p class="mt-2 text-sm font-semibold text-slate-900">ETB {{ formatMoney(checkoutOrder.prepaidAmount) }}</p>
+              </div>
             </div>
-            
-            <div v-for="car in activeCars" :key="car.id" 
-                 class="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-4 sm:p-5 shadow-sm hover:border-blue-300 hover:shadow-md transition-all duration-200">
-              <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4">
-                <div class="flex space-x-3 sm:space-x-4">
-                  <div class="h-10 w-10 sm:h-12 sm:w-12 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl flex items-center justify-center font-bold text-blue-600 border border-blue-100">
-                    {{ car.plate.split('-')[0] }}
-                  </div>
-                  <div>
-                    <h3 class="text-lg sm:text-xl font-mono font-bold text-gray-900">{{ car.plate }}</h3>
-                    <div class="flex flex-wrap items-center gap-2 text-[10px] sm:text-xs text-gray-500 mt-1">
-                      <span class="flex items-center">
-                        <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        In: {{ formatTime(car.entryTime) }}
-                      </span>
-                      <span class="bg-gray-100 px-2 py-0.5 rounded-full">ID: {{ car.cashierId }}</span>
-                    </div>
-                  </div>
+
+            <div class="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400">Amount Due Now</p>
+                  <p class="mt-2 text-3xl font-black text-slate-900">ETB {{ formatMoney(checkoutOrder.amountDueNow) }}</p>
                 </div>
-                <div class="sm:text-right flex sm:block justify-between items-center">
-                  <p class="text-xl sm:text-2xl font-mono font-bold text-gray-800">{{ calculateDuration(car.entryTime) }}</p>
-                  <p class="text-base sm:text-lg font-bold text-green-600">ETB {{ calculatePMSPrice(car) }}</p>
+                <div class="text-right text-xs text-slate-500">
+                  <p>Overtime {{ formatMinutes(checkoutOrder.overtimeMinutes) }}</p>
+                  <p class="mt-1">Extra ETB {{ formatMoney(checkoutOrder.overtimeAmount) }}</p>
                 </div>
               </div>
-              <div class="mt-3 sm:mt-4">
-                <button 
-                  @click="openPaymentDemo(car)" 
-                  class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-2 sm:py-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg"
+            </div>
+
+            <div
+              v-if="checkoutOrder.prepaid"
+              class="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800"
+            >
+              The reserved booking is already paid. Collect only the additional used time if the stay went beyond the booked duration.
+            </div>
+
+            <div v-if="Number(checkoutOrder.amountDueNow || 0) > 0">
+              <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Payment Method</p>
+              <div class="mt-3 grid grid-cols-2 gap-3">
+                <button
+                  @click="selectedPaymentMethod = 'CASH'"
+                  :class="paymentMethodButtonClass('CASH')"
+                  class="rounded-2xl px-4 py-4 text-left transition"
                 >
-                  Process Payment & Exit
+                  <p class="text-sm font-bold">Cash</p>
+                  <p class="mt-1 text-xs opacity-80">Collect directly at the desk</p>
+                </button>
+                <button
+                  @click="selectedPaymentMethod = 'TELEBIRR'"
+                  :class="paymentMethodButtonClass('TELEBIRR')"
+                  class="rounded-2xl px-4 py-4 text-left transition"
+                >
+                <img src="../../../assets/telebirr-icon.svg" alt="Telebirr" class="h-6 w-6" />
+                  <p class="text-sm font-bold">Telebirr</p>
+                  <p class="mt-1 text-xs opacity-80">Take digital payment before release</p>
                 </button>
               </div>
             </div>
-          </div>
 
-          <!-- History Tab -->
-          <div v-show="activeTab === 'completed'" class="space-y-2 sm:space-y-3">
-            <div v-if="recentScans.length === 0" class="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-6 sm:p-8 text-center">
-              <div class="inline-block p-3 bg-gray-100 rounded-full mb-3">
-                <svg class="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <p class="text-gray-500 text-sm sm:text-base">No history yet</p>
-              <p class="text-xs text-gray-400 mt-1">Completed transactions will appear here</p>
-            </div>
-            
-            <div v-for="(scan, index) in recentScans" :key="index" 
-                 class="bg-white rounded-lg sm:rounded-xl border border-gray-200 p-3 sm:p-4 hover:border-gray-300 transition-all">
-              <div class="flex justify-between items-center">
-                <div class="flex items-center space-x-3">
-                  <div class="h-8 w-8 bg-gray-100 rounded-lg flex items-center justify-center font-bold text-gray-600">
-                    {{ scan.plate.split('-')[0] }}
-                  </div>
-                  <div>
-                    <p class="font-mono font-bold text-sm sm:text-base text-gray-900">{{ scan.plate }}</p>
-                    <div class="flex items-center gap-2 text-[10px] sm:text-xs text-gray-500">
-                      <span>{{ scan.time }} • {{ scan.type }}</span>
-                      <span class="px-1.5 py-0.5 rounded-full" :class="scan.paymentMethod === 'Telebirr' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'">
-                        {{ scan.paymentMethod }}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div class="text-right">
-                  <span class="text-xs font-bold text-gray-700">ETB {{ scan.amount }}</span>
-                  <p class="text-[8px] text-gray-400">{{ scan.cashierId }}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Payment Modal -->
-    <Transition name="modal">
-      <div v-if="selectedCar" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm" @click.self="selectedCar = null">
-        <div class="bg-white rounded-2xl sm:rounded-3xl w-full max-w-md overflow-hidden shadow-2xl">
-          <!-- Modal Header -->
-          <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 sm:p-6 text-white text-center">
-            <p class="text-[10px] sm:text-xs uppercase font-bold tracking-widest opacity-80 mb-1">Payment Summary</p>
-            <h2 class="text-2xl sm:text-3xl font-mono font-black">{{ selectedCar.plate }}</h2>
-          </div>
-          
-          <!-- Modal Body -->
-          <div class="p-4 sm:p-6 space-y-3 sm:space-y-4">
-            <div class="flex justify-between text-xs sm:text-sm border-b border-dashed border-gray-200 pb-2 sm:pb-3">
-              <span class="text-gray-500">Duration</span>
-              <span class="font-bold text-gray-800">{{ calculateDuration(selectedCar.entryTime) }}</span>
-            </div>
-            <div class="flex justify-between text-xs sm:text-sm border-b border-dashed border-gray-200 pb-2 sm:pb-3">
-              <span class="text-gray-500">Rate Plan</span>
-              <span class="font-bold text-gray-800">Standard Rate</span>
-            </div>
-            <div class="flex justify-between items-center pt-2">
-              <span class="text-base sm:text-lg font-bold text-gray-800">Total Amount</span>
-              <span class="text-2xl sm:text-3xl font-black text-blue-600">ETB {{ calculatePMSPrice(selectedCar) }}</span>
-            </div>
-
-            <!-- Payment Methods -->
-            <div class="grid grid-cols-2 gap-2 sm:gap-3 mt-4 sm:mt-6">
-              <!-- Cash Option -->
-              <div 
-                @click="selectedPaymentMethod = 'cash'"
-                :class="[
-                  selectedPaymentMethod === 'cash' 
-                    ? 'border-2 border-blue-600 bg-blue-50' 
-                    : 'border border-gray-200 hover:border-blue-300',
-                  'p-2 sm:p-3 rounded-xl sm:rounded-2xl flex flex-col items-center cursor-pointer transition-all'
-                ]"
-              >
-                <span class="text-[8px] sm:text-[10px] font-bold uppercase" :class="selectedPaymentMethod === 'cash' ? 'text-blue-600' : 'text-gray-500'">
-                  Cash
-                </span>
-                <svg class="h-5 w-5 sm:h-6 sm:w-6 mt-1" :class="selectedPaymentMethod === 'cash' ? 'text-blue-600' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </div>
-
-              <!-- Telebirr Option - Now Working -->
-              <div 
-                @click="selectedPaymentMethod = 'telebirr'"
-                :class="[
-                  selectedPaymentMethod === 'telebirr' 
-                    ? 'border-2 border-green-600 bg-green-50' 
-                    : 'border border-gray-200 hover:border-green-300',
-                  'p-2 sm:p-3 rounded-xl sm:rounded-2xl flex flex-col items-center cursor-pointer transition-all'
-                ]"
-              >
-                <span class="text-[8px] sm:text-[10px] font-bold uppercase" :class="selectedPaymentMethod === 'telebirr' ? 'text-green-600' : 'text-gray-500'">
-                  Telebirr
-                </span>
-                <!-- Telebirr Logo/SVG -->
-                <div class="h-5 w-10 sm:h-6 sm:w-12 mt-1 flex items-center justify-center">
-                  <svg class="h-4 w-8 sm:h-5 sm:w-10" :class="selectedPaymentMethod === 'telebirr' ? 'text-green-600' : 'text-gray-400'" viewBox="0 0 40 24" fill="currentColor">
-                    <rect x="4" y="4" width="32" height="16" rx="4" :fill="selectedPaymentMethod === 'telebirr' ? '#059669' : '#9CA3AF'" />
-                    <text x="10" y="17" font-family="Arial" font-size="8" fill="white" font-weight="bold">Telebirr</text>
-                  </svg>
-                </div>
-              </div>
-            </div>
-
-            <!-- Telebirr Payment Modal (Shows when Telebirr is selected) -->
-            <Transition name="slide-fade">
-              <div v-if="selectedPaymentMethod === 'telebirr'" class="mt-4 p-4 bg-green-50 rounded-xl border border-green-200">
-                <h4 class="text-sm font-bold text-green-800 mb-3">Pay with Telebirr</h4>
-                
-                <!-- QR Code Simulation -->
-                <div class="flex justify-center mb-4">
-                  <div class="bg-white p-3 rounded-xl shadow-sm">
-                    <div class="grid grid-cols-4 gap-1">
-                      <div v-for="i in 16" :key="i" 
-                           class="w-2 h-2 sm:w-3 sm:h-3"
-                           :class="Math.random() > 0.5 ? 'bg-black' : 'bg-gray-200'">
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Payment Details -->
-                <div class="space-y-2 text-sm">
-                  <div class="flex justify-between">
-                    <span class="text-green-700">Amount:</span>
-                    <span class="font-bold text-green-800">ETB {{ selectedCar ? calculatePMSPrice(selectedCar) : 0 }}</span>
-                  </div>
-                  <div class="flex justify-between">
-                    <span class="text-green-700">Merchant:</span>
-                    <span class="font-bold text-green-800">Meskel Parking</span>
-                  </div>
-                  <div class="flex justify-between">
-                    <span class="text-green-700">Reference:</span>
-                    <span class="font-mono text-xs text-green-800">{{ generateReference() }}</span>
-                  </div>
-                </div>
-
-                <!-- Instructions -->
-                <div class="mt-4 text-xs text-green-700 bg-white p-3 rounded-lg border border-green-100">
-                  <p class="font-bold mb-1">📱 How to pay:</p>
-                  <ol class="list-decimal list-inside space-y-1">
-                    <li>Open Telebirr app</li>
-                    <li>Scan the QR code</li>
-                    <li>Confirm payment</li>
-                  </ol>
-                </div>
-              </div>
-            </Transition>
-
-            <!-- Confirm Button - Updated to handle both payment methods -->
-            <button 
-              @click="processPayment" 
-              :disabled="isProcessing || !selectedPaymentMethod" 
-              :class="[
-                selectedPaymentMethod === 'telebirr' 
-                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700' 
-                  : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700',
-                'w-full text-white py-3 sm:py-4 rounded-xl sm:rounded-2xl font-black text-base sm:text-lg mt-4 transition-all shadow-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center'
-              ]"
+            <div
+              v-else
+              class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
             >
-              <span v-if="!isProcessing">
-                {{ selectedPaymentMethod === 'telebirr' ? 'CONFIRM TELEBIRR PAYMENT' : 'CONFIRM CASH PAYMENT' }}
-              </span>
-              <svg v-else class="animate-spin h-5 w-5 sm:h-6 sm:w-6 text-white" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-            </button>
-            
-            <!-- Cancel Button -->
-            <button 
-              @click="selectedCar = null; selectedPaymentMethod = null" 
-              class="w-full text-gray-400 text-xs sm:text-sm font-bold py-2 uppercase tracking-widest hover:text-red-500 transition-colors"
+              No extra balance is due. This vehicle can be checked out as prepaid.
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 px-6 py-5 sm:flex-row sm:justify-end">
+            <button
+              @click="closeCheckout"
+              class="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-white"
             >
               Cancel
+            </button>
+            <button
+              @click="confirmCheckout"
+              :disabled="isCheckingOut || checkoutRequiresPaymentMethod"
+              class="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:opacity-60"
+            >
+              {{ isCheckingOut ? "Processing..." : checkoutButtonLabel }}
             </button>
           </div>
         </div>
@@ -394,268 +484,400 @@
 </template>
 
 <script setup>
-import { pmsApi } from '../api/pmsApi'
-import { clientServiceApi } from '../api/clientServiceApi'
-import { ref, onMounted } from 'vue'
-import { useCashierPayments } from '../composables/useCashierPayments'
+import { computed, nextTick, onMounted, onUnmounted, ref } from "vue";
+import { useAuth } from "@/stores/auth";
+import { useToast } from "@/features/client-service/components/ui/toast";
+import { clientServiceApi } from "../api/clientServiceApi";
+import {
+  buildParkingLocationDisplay,
+  resolveEntranceName,
+} from "../utils/parkingLayout";
 
-// State
-const isFetching = ref(false)
-const isProcessing = ref(false)
-const lastRefreshTime = ref(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
-const activeTab = ref('active')
-const selectedCar = ref(null)
-const selectedPaymentMethod = ref(null)
-const arrivalPlate = ref('')
-const arrivalError = ref('')
-const isAccepting = ref(false)
-const isSearching = ref(false)
-const arrivalResult = ref(null)
+const authStore = useAuth();
+const { showToast } = useToast();
 
-// Mock Data
-const activeCars = ref([])
+const arrivalPlate = ref("");
+const arrivalError = ref("");
+const arrivalResult = ref(null);
+const reservations = ref([]);
+const activeOrders = ref([]);
+const completedOrders = ref([]);
+const checkoutOrder = ref(null);
+const selectedPaymentMethod = ref("");
+const isLoading = ref(false);
+const hasLoaded = ref(false);
+const isSearching = ref(false);
+const isAccepting = ref(false);
+const isCheckingOut = ref(false);
+const errorMessage = ref("");
+const lastRefreshAt = ref(null);
+const liveFloorSection = ref(null);
+const lastAcceptedOrderUuid = ref(null);
 
-const { payments: recentScans, cashierId: displayCashierId, fetchPayments } = useCashierPayments()
+const cashierLabel = computed(() => {
+  const user = authStore.auth?.user;
+  return user?.fullName || user?.firstName || user?.email || "Cashier";
+});
 
-// Methods
-const calculatePMSPrice = (car) => {
-  if (!car?.entryTime) return 0
-  const diffInMinutes = Math.max(0, Math.floor((new Date() - new Date(car.entryTime)) / 60000))
+const lastRefreshLabel = computed(() => {
+  if (!lastRefreshAt.value) return "Not synced yet";
+  return lastRefreshAt.value.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+});
 
-  if (car.rateApplied) {
-    const hours = diffInMinutes / 60
-    return Math.max(0, Number((hours * car.rateApplied).toFixed(2)))
+const lateReservations = computed(() =>
+  reservations.value.filter((order) => Number(order.lateMinutes || 0) > 0)
+);
+
+const totalOvertimeDue = computed(() =>
+  activeOrders.value.reduce((sum, order) => sum + Number(order.overtimeAmount || 0), 0)
+);
+
+const completedAmountTotal = computed(() =>
+  completedOrders.value.reduce((sum, order) => sum + Number(order.totalAmount || 0), 0)
+);
+
+const checkoutRequiresPaymentMethod = computed(
+  () =>
+    Number(checkoutOrder.value?.amountDueNow || 0) > 0 &&
+    !selectedPaymentMethod.value
+);
+
+const checkoutButtonLabel = computed(() => {
+  if (!checkoutOrder.value) return "Complete Checkout";
+  if (Number(checkoutOrder.value.amountDueNow || 0) <= 0) {
+    return "Complete Prepaid Exit";
+  }
+  return `Collect ETB ${formatMoney(checkoutOrder.value.amountDueNow)} and Exit`;
+});
+
+const shortOrderId = (value) => {
+  if (!value) return "Order";
+  return `#${value.slice(0, 8)}`;
+};
+
+const parkingLocation = (order) => {
+  return buildParkingLocationDisplay(order || {}) || "Parking location not assigned";
+};
+
+const entranceName = (order) => {
+  return resolveEntranceName(order || {}) || "Entrance not assigned";
+};
+
+const formatMoney = (value) => {
+  return Number(value || 0).toLocaleString("en-ET", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+};
+
+const formatDateTime = (value) => {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("en-ET", {
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const formatMinutes = (minutes) => {
+  const total = Number(minutes || 0);
+  if (!total) return "0m";
+  const hours = Math.floor(total / 60);
+  const remainder = total % 60;
+  if (!hours) return `${remainder}m`;
+  return `${hours}h ${String(remainder).padStart(2, "0")}m`;
+};
+
+const formatParkingSchedule = (order) => {
+  const date = order?.parkingDate ? new Date(`${order.parkingDate}T00:00:00`) : null;
+  const dateLabel =
+    date && !Number.isNaN(date.getTime())
+      ? date.toLocaleDateString("en-ET", { month: "short", day: "2-digit" })
+      : order?.parkingDate || "-";
+  const timeLabel = order?.scheduledEntryTime || "-";
+  return `${dateLabel} at ${timeLabel}`;
+};
+
+const bookingWindow = (order) => {
+  const start = formatParkingSchedule(order);
+  const plannedExit = order?.plannedExitTime ? formatDateTime(order.plannedExitTime) : null;
+  return plannedExit ? `${start} • Exit ${plannedExit}` : start;
+};
+
+const arrivalWindowClass = (status) => {
+  switch ((status || "").toUpperCase()) {
+    case "EARLY":
+      return "bg-sky-100 text-sky-700";
+    case "ON_TIME":
+      return "bg-emerald-100 text-emerald-700";
+    case "LATE":
+      return "bg-amber-100 text-amber-700";
+    case "VERY_LATE":
+      return "bg-rose-100 text-rose-700";
+    default:
+      return "bg-slate-100 text-slate-600";
+  }
+};
+
+const paymentStatusClass = (order) => {
+  const dueNow = Number(order?.amountDueNow || 0);
+  const overtime = Number(order?.overtimeAmount || 0);
+
+  if (!dueNow) return "bg-emerald-100 text-emerald-700";
+  if (overtime > 0) return "bg-rose-100 text-rose-700";
+  return "bg-amber-100 text-amber-700";
+};
+
+const arrivalWindowLabel = (order) => {
+  const status = `${order?.arrivalWindowStatus || "PENDING"}`.replaceAll("_", " ");
+  if (Number(order?.lateMinutes || 0) > 0) {
+    return `${status} • ${order.lateMinutes}m`;
+  }
+  return status;
+};
+
+const paymentSummary = (order) => {
+  const label = order?.paymentStatusLabel || "Payment status unavailable";
+  const due = Number(order?.amountDueNow || 0);
+  const prepaid = Boolean(order?.prepaid);
+
+  if (prepaid && due > 0) {
+    return `BOOKED TIME PAID • ETB ${formatMoney(due)} extra due`;
   }
 
-  if (diffInMinutes >= 220) return 200
-  if (diffInMinutes >= 205) return 175
-  if (diffInMinutes >= 120) return 100
-  if (diffInMinutes >= 60) return 50
-  return 30
-}
-
-const calculateTodayRevenue = () => {
-  const activeRevenue = activeCars.value.reduce((sum, car) => sum + calculatePMSPrice(car), 0)
-  const historyRevenue = recentScans.value.reduce((sum, scan) => sum + (scan.amount || 0), 0)
-  return activeRevenue + historyRevenue
-}
-
-const fetchPendingFromPMS = async () => {
-  isFetching.value = true
-  try {
-    const response = await pmsApi.getPendingVehicles({ sinceMinutes: 2, limit: 20, refresh: true })
-    const pmsCars = (response.data || []).map((v, idx) => ({
-      id: idx + 1,
-      plate: v.plateNo,
-      entryTime: v.entryTime,
-      cashierId: v.cashierId || displayCashierId.value
-    }))
-    const acceptedCars = await loadActiveOrders()
-    const merged = [...acceptedCars, ...pmsCars].reduce((acc, car) => {
-      const key = car.orderUuid || car.plate
-      if (!acc.map.has(key)) {
-        acc.map.add(key)
-        acc.list.push(car)
-      }
-      return acc
-    }, { map: new Set(), list: [] }).list
-    activeCars.value = merged
-    lastRefreshTime.value = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  } catch (error) {
-    console.error('Failed to fetch PMS pending vehicles:', error)
-  } finally {
-    isFetching.value = false
+  if (prepaid && due <= 0) {
+    return "BOOKED TIME PAID";
   }
-}
 
-const openPaymentDemo = (car) => {
-  selectedCar.value = car
-  selectedPaymentMethod.value = null // Reset payment method when opening modal
-}
+  if (due > 0) {
+    return `${label} • ETB ${formatMoney(due)} due`;
+  }
+  return label;
+};
 
-const searchAppointment = async () => {
-  arrivalError.value = ''
-  arrivalResult.value = null
-  if (!arrivalPlate.value) return
-  isSearching.value = true
-  try {
-    const response = await clientServiceApi.findParkingAppointment(arrivalPlate.value)
-    const data = response.data
-    arrivalResult.value = {
-      vehiclePlate: data.vehiclePlate || arrivalPlate.value.trim().toUpperCase(),
-      orderUuid: data.orderUuid,
-      rateApplied: data.rateApplied
+const reservationPolicyText = (order) => {
+  const lateMinutes = Number(order?.lateMinutes || 0);
+  const plannedExit = order?.plannedExitTime ? formatDateTime(order.plannedExitTime) : "the reserved end time";
+  const prepaid = Boolean(order?.prepaid);
+
+  if (lateMinutes > 0) {
+    return `Customer is ${lateMinutes} minutes late. Cashier can still accept the vehicle. After arrival, the customer keeps the paid parking duration, and only extra used time after that duration plus the grace window should be charged.${prepaid ? " The booked time is already paid." : ""}`;
+  }
+
+  return `Customer is within the allowed arrival window. After arrival, track checkout from the paid parking duration and collect only additional used time beyond that duration if needed.${prepaid ? " The booking is already paid online." : ""}`.trim();
+};
+
+const clearSearch = () => {
+  arrivalPlate.value = "";
+  arrivalError.value = "";
+  arrivalResult.value = null;
+};
+
+const setArrivalResult = (reservation) => {
+  arrivalPlate.value = reservation?.vehiclePlate || "";
+  arrivalError.value = "";
+  arrivalResult.value = reservation;
+};
+
+const upsertActiveOrder = (order) => {
+  if (!order?.orderUuid) return;
+  activeOrders.value = [
+    order,
+    ...activeOrders.value.filter((item) => item.orderUuid !== order.orderUuid),
+  ];
+};
+
+const removeReservation = (order) => {
+  const orderUuid = order?.orderUuid;
+  const vehiclePlate = `${order?.vehiclePlate || ""}`.toUpperCase();
+
+  reservations.value = reservations.value.filter((item) => {
+    if (orderUuid && item.orderUuid === orderUuid) {
+      return false;
     }
-  } catch (error) {
-    arrivalError.value = error?.response?.data?.message || error?.message || 'Failed to accept appointment'
-  } finally {
-    isSearching.value = false
-  }
-}
+    if (vehiclePlate && `${item.vehiclePlate || ""}`.toUpperCase() === vehiclePlate) {
+      return false;
+    }
+    return true;
+  });
+};
 
-const acceptArrivalFromResult = () => {
-  if (!arrivalResult.value) return
-  isAccepting.value = true
-  clientServiceApi.acceptParkingArrival(arrivalResult.value.vehiclePlate)
-    .then((response) => {
-      const data = response.data
-      activeCars.value.unshift({
-        id: Date.now(),
-        plate: data.vehiclePlate || arrivalResult.value.vehiclePlate,
-        entryTime: data.entryTime || new Date().toISOString(),
-        cashierId: displayCashierId.value,
-        orderUuid: data.orderUuid,
-        rateApplied: data.rateApplied
-      })
-      arrivalPlate.value = ''
-      arrivalResult.value = null
-    })
-    .catch((error) => {
-      arrivalError.value = error?.response?.data?.message || error?.message || 'Failed to accept appointment'
-    })
-    .finally(() => {
-      isAccepting.value = false
-    })
-}
+const loadReservations = async () => {
+  const today = new Date().toISOString().slice(0, 10);
+  const response = await clientServiceApi.getCashierReservations(today);
+  reservations.value = response.data || [];
+};
 
 const loadActiveOrders = async () => {
+  const response = await clientServiceApi.getActiveOrders("PARKING");
+  activeOrders.value = response.data || [];
+};
+
+const loadCompletedOrders = async () => {
+  const response = await clientServiceApi.getCompletedOrders("PARKING");
+  completedOrders.value = response.data || [];
+};
+
+const refreshAll = async ({ silent = true } = {}) => {
+  if (!silent || !hasLoaded.value) {
+    isLoading.value = true;
+  }
+
+  errorMessage.value = "";
+
   try {
-    const response = await clientServiceApi.getActiveOrders('PARKING')
-    return (response.data || []).map((o, idx) => ({
-      id: idx + 1,
-      plate: o.vehiclePlate,
-      entryTime: o.entryTime,
-      cashierId: displayCashierId.value,
-      orderUuid: o.orderUuid,
-      rateApplied: o.rateApplied
-    }))
+    await Promise.all([loadReservations(), loadActiveOrders(), loadCompletedOrders()]);
+    lastRefreshAt.value = new Date();
   } catch (error) {
-    console.error('Failed to load active orders:', error)
-    return []
+    const message =
+      error?.response?.data?.message ||
+      error?.message ||
+      "Failed to load cashier dashboard";
+    errorMessage.value = message;
+    if (!silent) {
+      showToast({
+        title: "Dashboard unavailable",
+        description: message,
+        type: "error",
+      });
+    }
+  } finally {
+    hasLoaded.value = true;
+    isLoading.value = false;
   }
-}
+};
 
-const generateReference = () => {
-  return 'TEB' + Math.random().toString(36).substring(2, 10).toUpperCase()
-}
+const searchAppointment = async () => {
+  arrivalError.value = "";
+  arrivalResult.value = null;
 
-const processPayment = async () => {
-  if (!selectedPaymentMethod.value) {
-    alert('Please select a payment method')
-    return
-  }
-  
-  isProcessing.value = true
-  
+  if (!arrivalPlate.value.trim()) return;
+
+  isSearching.value = true;
   try {
-    const car = selectedCar.value
-    const amount = calculatePMSPrice(car)
-    const payload = {
-      plateNo: car.plate,
-      entryTime: car.entryTime,
-      cashierId: displayCashierId.value,
-      paymentMethod: selectedPaymentMethod.value === 'telebirr' ? 'TELEBIRR' : 'CASH',
-      amount
+    const response = await clientServiceApi.findParkingAppointment(arrivalPlate.value.trim().toUpperCase());
+    arrivalResult.value = response.data;
+  } catch (error) {
+    arrivalError.value =
+      error?.response?.data?.message ||
+      error?.message ||
+      "No reservation found for this plate";
+  } finally {
+    isSearching.value = false;
+  }
+};
+
+const acceptArrivalFromResult = async () => {
+  if (!arrivalResult.value?.vehiclePlate) return;
+
+  isAccepting.value = true;
+  arrivalError.value = "";
+
+  try {
+    const response = await clientServiceApi.acceptParkingArrival(arrivalResult.value.vehiclePlate);
+    const acceptedOrder = response?.data || null;
+    const acceptedOrderUuid = acceptedOrder?.orderUuid || arrivalResult.value.orderUuid || null;
+
+    if (acceptedOrder) {
+      upsertActiveOrder(acceptedOrder);
+      removeReservation(acceptedOrder);
     }
 
-    await pmsApi.createPayment(payload)
+    showToast({
+      title: "Arrival accepted",
+      description: `${arrivalResult.value.vehiclePlate} is now checked in.`,
+      type: "success",
+    });
+    clearSearch();
+    lastAcceptedOrderUuid.value = acceptedOrderUuid;
+    await nextTick();
+    liveFloorSection.value?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
 
-    // Remove from active cars
-    activeCars.value = activeCars.value.filter(c => c.id !== car.id)
+    await refreshAll({ silent: true });
 
-    await fetchPayments()
-
-    selectedCar.value = null
-    selectedPaymentMethod.value = null
-
-    alert(`Payment successful via ${payload.paymentMethod === 'TELEBIRR' ? 'Telebirr' : 'Cash'}`)
+    window.setTimeout(() => {
+      if (lastAcceptedOrderUuid.value === acceptedOrderUuid) {
+        lastAcceptedOrderUuid.value = null;
+      }
+    }, 5000);
   } catch (error) {
-    console.error('Payment failed:', error)
-    alert('Payment failed. Please try again.')
+    arrivalError.value =
+      error?.response?.data?.message ||
+      error?.message ||
+      "Failed to accept vehicle arrival";
   } finally {
-    isProcessing.value = false
+    isAccepting.value = false;
   }
-}
+};
 
-const formatTime = (date) => {
-  return new Date(date).toLocaleTimeString([], { 
-    hour: '2-digit', 
-    minute: '2-digit',
-    hour12: true 
-  })
-}
+const openCheckout = (order) => {
+  checkoutOrder.value = order;
+  selectedPaymentMethod.value = Number(order?.amountDueNow || 0) > 0 ? "" : "PREPAID";
+};
 
-const calculateDuration = (entryTime) => {
-  const diff = Math.floor((new Date() - new Date(entryTime)) / 60000)
-  const hours = Math.floor(diff / 60)
-  const minutes = diff % 60
-  return `${hours}h ${minutes.toString().padStart(2, '0')}m`
-}
+const closeCheckout = () => {
+  checkoutOrder.value = null;
+  selectedPaymentMethod.value = "";
+};
 
+const paymentMethodButtonClass = (method) => {
+  return selectedPaymentMethod.value === method
+    ? "border-2 border-sky-500 bg-sky-50 text-sky-800"
+    : "border border-slate-200 bg-white text-slate-700 hover:border-sky-300";
+};
 
-// Auto-refresh durations every minute
-onMounted(() => {
-  fetchPendingFromPMS()
-  fetchPayments()
-  setInterval(() => {
-    // Force re-render to update durations
-    activeCars.value = [...activeCars.value]
-  }, 60000)
-})
+const confirmCheckout = async () => {
+  if (!checkoutOrder.value) return;
+  if (checkoutRequiresPaymentMethod.value) return;
+
+  isCheckingOut.value = true;
+
+  try {
+    await clientServiceApi.checkoutParkingOrder(
+      checkoutOrder.value.orderUuid,
+      Number(checkoutOrder.value.amountDueNow || 0) > 0 ? selectedPaymentMethod.value : null
+    );
+
+    showToast({
+      title: "Vehicle checked out",
+      description: `${checkoutOrder.value.vehiclePlate} has been completed successfully.`,
+      type: "success",
+    });
+
+    closeCheckout();
+    await refreshAll({ silent: true });
+  } catch (error) {
+    showToast({
+      title: "Checkout failed",
+      description:
+        error?.response?.data?.message ||
+        error?.message ||
+        "Unable to complete checkout right now.",
+      type: "error",
+    });
+  } finally {
+    isCheckingOut.value = false;
+  }
+};
+
+let refreshIntervalId = null;
+
+onMounted(async () => {
+  await refreshAll({ silent: false });
+  refreshIntervalId = window.setInterval(() => {
+    refreshAll({ silent: true });
+  }, 30000);
+});
+
+onUnmounted(() => {
+  if (refreshIntervalId) {
+    window.clearInterval(refreshIntervalId);
+  }
+});
 </script>
-
-<style scoped>
-.modal-enter-active,
-.modal-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
-
-.modal-enter-active .bg-white,
-.modal-leave-active .bg-white {
-  transition: transform 0.3s ease;
-}
-
-.modal-enter-from .bg-white,
-.modal-leave-to .bg-white {
-  transform: scale(0.95);
-}
-
-.slide-fade-enter-active {
-  transition: all 0.3s ease-out;
-}
-
-.slide-fade-leave-active {
-  transition: all 0.2s cubic-bezier(1, 0.5, 0.8, 1);
-}
-
-.slide-fade-enter-from,
-.slide-fade-leave-to {
-  transform: translateY(-10px);
-  opacity: 0;
-}
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #cbd5e0;
-  border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-</style>

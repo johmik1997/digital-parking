@@ -58,8 +58,23 @@ public class ServiceOrder {
     @Column(name = "parking_date")
     private String parkingDate;
 
+    @Column(name = "entrance_name")
+    private String entranceName;
+
+    @Column(name = "parking_level_type")
+    private String parkingLevelType;
+
+    @Column(name = "parking_level_code")
+    private String parkingLevelCode;
+
+    @Column(name = "parking_zone")
+    private String parkingZone;
+
     @Column(name = "selected_slot")
     private String selectedSlot;
+
+    @Column(name = "scheduled_entry_time")
+    private String scheduledEntryTime;
 
     @Column(name = "entry_time")
     private String entryTime;

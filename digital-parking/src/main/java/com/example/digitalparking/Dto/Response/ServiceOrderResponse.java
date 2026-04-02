@@ -32,8 +32,17 @@ public class ServiceOrderResponse {
     private String vehicleType;
     private String washPackage;
     private String parkingDate;
+    private String entranceName;
+    private String parkingLevelType;
+    private String parkingLevelCode;
+    private String parkingZone;
     private String selectedSlot;
+    private String parkingLocationDisplay;
+    private String googleMapsUrl;
+    private String navigationInstructions;
+    private String scheduledEntryTime;
     private String entryTime;
+    private LocalDateTime completedAt;
     private String visitDate;
     private String ticketType;
     private Integer quantity;
@@ -42,4 +51,16 @@ public class ServiceOrderResponse {
     private String orderDate;
     private String clientName;
     private String clientEmail;
+    private Double bookedAmount;
+    private Double prepaidAmount;
+    private Double overtimeAmount;
+    private Double amountDueNow;
+    private Integer bookedMinutes;
+    private Integer elapsedMinutes;
+    private Integer lateMinutes;
+    private Integer overtimeMinutes;
+    private Boolean prepaid;
+    private String arrivalWindowStatus;
+    private String paymentStatusLabel;
+    private String plannedExitTime;
 }

@@ -1,5 +1,4 @@
 import ApiService from "@/service/ApiService";
-import { useAuth } from "@/stores/auth";
 
 const api = new ApiService();
 const path = "/client/services";
@@ -17,10 +16,10 @@ export const clientServiceApi = {
   },
 
   // ✅ Get parking availability by date
-  getParkingAvailability(serviceUuid, parkingDate) {
+  getParkingAvailability(serviceUuid, parkingDate, duration) {
     return api
       .addAuthenticationHeader()
-      .get(`${path}/${serviceUuid}/availability`, { params: { parkingDate } });
+      .get(`${path}/${serviceUuid}/availability`, { params: { parkingDate, duration } });
   },
 
   // ✅ Create service order
@@ -70,5 +69,23 @@ export const clientServiceApi = {
     return api
       .addAuthenticationHeader()
       .get(`${path}/orders/active`, { params: { serviceType } });
+  },
+
+  getCashierReservations(parkingDate) {
+    return api
+      .addAuthenticationHeader()
+      .get(`${path}/orders/cashier/reservations`, { params: { parkingDate } });
+  },
+
+  getCompletedOrders(serviceType = 'PARKING') {
+    return api
+      .addAuthenticationHeader()
+      .get(`${path}/orders/completed`, { params: { serviceType } });
+  },
+
+  checkoutParkingOrder(orderUuid, paymentMethod) {
+    return api
+      .addAuthenticationHeader()
+      .post(`${path}/orders/${orderUuid}/checkout`, null, { params: { paymentMethod } });
   }
 };

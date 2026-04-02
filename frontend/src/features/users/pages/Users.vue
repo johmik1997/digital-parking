@@ -162,25 +162,25 @@ const totalPages = computed(() =>
             </span>
           </template>
 
-          <!-- Actions Slot -->
-          <template #actions="{ row }">
-            <div class="flex flex-wrap gap-2">
-              <button
-                class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1 justify-center text-sm transition-colors"
+            <template #actions="{ row }">
+          <div class="flex flex-col sm:flex-row gap-2">
+            <button
+              class="bg-gray-600 text-white px-3 py-1 rounded flex justify-center items-center gap-1"
                 @click="$router.push('/edit_user/' + row.userUuid)"
-              >
-                <BaseIcon :path="mdiPencil" class="w-4 h-4" />
-                <span class="hidden sm:inline">Edit</span>
-              </button>
-              <button
-                class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1 justify-center text-sm transition-colors"
+            >
+              <BaseIcon :path="mdiPencil" />
+              <span class=" sm:inline">Edit</span>
+            </button>
+            <button
+              class="bg-[#FF4C4C] text-white px-3 py-1 rounded flex justify-center items-center gap-1"
                 @click="remove(row.userUuid)"
-              >
-                <BaseIcon :path="mdiDeleteAlert" class="w-4 h-4" />
-                <span class="hidden sm:inline">Delete</span>
-              </button>
-            </div>
-          </template>
+            >
+              <BaseIcon :path="mdiDeleteAlert" />
+              <span class=" sm:inline">Delete</span>
+            </button>
+          </div>
+        </template>
+         
 
           <!-- Empty Slot -->
           <template #empty>

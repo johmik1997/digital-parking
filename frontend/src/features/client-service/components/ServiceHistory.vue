@@ -40,8 +40,9 @@
         <!-- Details Grid -->
         <div class="grid grid-cols-2 gap-3 mb-3">
           <div class="bg-gray-50 rounded-lg p-2">
-            <p class="text-[10px] sm:text-xs text-gray-500 mb-0.5">Date</p>
-            <p class="text-xs sm:text-sm font-medium text-gray-900">{{ formatDate(order.createdAt) }}</p>
+            <p class="text-[10px] sm:text-xs text-gray-500 mb-0.5">{{ getDateLabel(order) }}</p>
+            <p class="text-xs sm:text-sm font-medium text-gray-900">{{ getDateValue(order) }}</p>
+            <p v-if="getDateMeta(order)" class="mt-1 text-[10px] sm:text-xs text-gray-500">{{ getDateMeta(order) }}</p>
           </div>
           <div class="bg-gray-50 rounded-lg p-2">
             <p class="text-[10px] sm:text-xs text-gray-500 mb-0.5">Duration</p>
@@ -57,6 +58,18 @@
           </div>
         </div>
 
+        <div v-if="order.parkingLocationDisplay || order.navigationInstructions" class="mb-3 rounded-xl border border-emerald-100 bg-emerald-50/70 p-3">
+          <p v-if="order.parkingLocationDisplay" class="text-xs font-semibold text-emerald-700">
+            {{ order.parkingLocationDisplay }}
+          </p>
+          <p v-if="order.entranceName" class="mt-1 text-[11px] text-gray-600">
+            Entrance: {{ order.entranceName }}
+          </p>
+          <p v-if="order.navigationInstructions" class="mt-1 text-[11px] text-gray-600">
+            {{ order.navigationInstructions }}
+          </p>
+        </div>
+
         <!-- Rate Reference (if available) -->
         <div v-if="order.rateUuid" class="mb-3">
           <div class="bg-gray-50 rounded-lg px-2 py-1.5 inline-block">
@@ -68,6 +81,15 @@
 
         <!-- Action Buttons -->
         <div class="flex flex-col sm:flex-row sm:justify-end gap-2 mt-2 pt-2 border-t border-gray-100">
+          <a
+            v-if="isRideReady(order)"
+            :href="order.googleMapsUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="max-w-full sm:w-auto px-3 py-2.5 sm:py-2 text-center text-xs sm:text-sm font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors"
+          >
+            Navigate
+          </a>
           <button
             @click="$emit('view-details', order)"
             class="max-w-full sm:w-auto px-3 py-2.5 sm:py-2 text-xs sm:text-sm font-medium text-[#3C3C9E] bg-[#3C3C9E]/5 hover:bg-[#3C3C9E]/10 rounded-lg transition-colors"
@@ -121,8 +143,46 @@ const formatDate = (dateString) => {
   }
 };
 
+const formatPlainDate = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return dateString;
+
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+};
+
 const formatUuid = (uuid) => {
   if (!uuid) return '';
   return uuid.substring(0, 8) + '...' + uuid.substring(uuid.length - 4);
+};
+
+const isRideReady = (order) => {
+  return `${order?.serviceType || ''}`.toUpperCase() === 'PARKING' &&
+    `${order?.status || ''}`.toUpperCase() === 'COMPLETED' &&
+    !!order?.googleMapsUrl;
+};
+
+const getDateLabel = (order) => {
+  return `${order?.serviceType || ''}`.toUpperCase() === 'PARKING' ? 'Scheduled' : 'Date';
+};
+
+const getDateValue = (order) => {
+  if (`${order?.serviceType || ''}`.toUpperCase() === 'PARKING') {
+    const parkingDate = formatPlainDate(order?.parkingDate);
+    const parkingTime = order?.scheduledEntryTime || order?.entryTime;
+    if (parkingDate && parkingTime) return `${parkingDate}, ${parkingTime}`;
+    return parkingDate || parkingTime || formatDate(order?.createdAt);
+  }
+
+  return formatDate(order?.createdAt);
+};
+
+const getDateMeta = (order) => {
+  if (`${order?.serviceType || ''}`.toUpperCase() !== 'PARKING') return '';
+  return order?.createdAt ? `Ordered ${formatDate(order.createdAt)}` : '';
 };
 </script>

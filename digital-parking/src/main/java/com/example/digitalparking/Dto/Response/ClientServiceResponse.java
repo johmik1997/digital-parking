@@ -13,6 +13,7 @@ public class ClientServiceResponse {
 
     private String serviceUuid;
     private String name;
+    private String type;
     private String description;
     private String pricingType;
     private Integer slot;

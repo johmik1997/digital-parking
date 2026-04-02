@@ -65,6 +65,22 @@
                   <span class="text-xs sm:text-sm text-gray-600">{{ getBookingLabel(order.serviceType) }}:</span>
                   <span class="text-xs sm:text-sm text-gray-900">{{ getBookingValue(order) }}</span>
                 </div>
+                <div v-if="order?.parkingLocationDisplay" class="flex justify-between items-start gap-3">
+                  <span class="text-xs sm:text-sm text-gray-600">Parking Slot:</span>
+                  <span class="text-right text-xs sm:text-sm text-gray-900">{{ order.parkingLocationDisplay }}</span>
+                </div>
+                <div v-if="order?.navigationInstructions" class="rounded-lg bg-white/70 px-3 py-2 text-[11px] text-gray-600">
+                  {{ order.navigationInstructions }}
+                </div>
+                <a
+                  v-if="order?.googleMapsUrl"
+                  :href="order.googleMapsUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center justify-center rounded-lg bg-white px-3 py-2 text-xs font-semibold text-[#3C3C9E] ring-1 ring-[#3C3C9E]/15 transition hover:bg-[#3C3C9E]/5"
+                >
+                  Open Google Maps
+                </a>
                 <div class="flex justify-between items-center pt-2 mt-2 border-t border-gray-200">
                   <span class="text-sm sm:text-base font-semibold text-gray-900">Total Amount:</span>
                   <span class="text-xl sm:text-2xl font-bold text-[#3C3C9E]">ETB {{ formatPrice(order?.amount || 0) }}</span>
@@ -85,7 +101,8 @@
                   </p>
                   <div class="flex flex-wrap gap-1.5 sm:gap-2">
                     <span class="inline-flex items-center px-2 py-1 bg-white rounded-md text-xs text-gray-700 border border-blue-200">
-                      🇪🇹 Telebirr
+                                        <img src="../../../assets/telebirr-icon.svg" alt="Telebirr" class="h-5 w-5 sm:h-6 sm:w-6" />  
+   Telebirr
                     </span>
                     <span class="inline-flex items-center px-2 py-1 bg-white rounded-md text-xs text-gray-700 border border-blue-200">
                       💳 CBE Birr

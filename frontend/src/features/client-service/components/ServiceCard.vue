@@ -9,12 +9,12 @@
             class="inline-block mt-1 px-2 py-1 text-xs font-medium rounded-full"
             :class="serviceTypeClass"
           >
-            {{ getServiceTypeLabel(service.type) }}
+            {{ getServiceTypeLabel(serviceType) }}
           </span>
         </div>
         <div class="sm:text-right">
           <p class="text-xl sm:text-2xl font-bold text-[#3C3C9E]">ETB {{ service.currentRate }}</p>
-          <p class="text-xs text-gray-500">per {{ service.unit }}Hour</p>
+          <p class="text-xs text-gray-500">per {{ rateUnitLabel }}</p>
         </div>
       </div>
       
@@ -86,7 +86,7 @@ const props = defineProps({
 defineEmits(['select']);
 
 const serviceTypeClass = computed(() => {
-  switch (props.service.type) {
+  switch (serviceType.value) {
     case 'CAR_WASH':
       return 'bg-blue-100 text-blue-800';
     case 'PARKING':
@@ -106,6 +106,21 @@ const getServiceTypeLabel = (type) => {
     default: return type;
   }
 };
+
+const serviceType = computed(() => {
+  if (props.service.type) return props.service.type
+
+  const name = props.service.name?.toLowerCase() || ''
+  if (name.includes('car wash')) return 'CAR_WASH'
+  if (name.includes('parking')) return 'PARKING'
+  if (name.includes('meskel') || name.includes('amusement')) return 'AMUSEMENT'
+  return 'SERVICE'
+})
+
+const rateUnitLabel = computed(() => {
+  return props.service.pricingType === 'HOURLY' ? 'hour' : 'booking'
+})
+
 const serviceFeatures = computed(() => {
   const name = props.service.name?.toLowerCase() || '';
 
